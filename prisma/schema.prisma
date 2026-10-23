@@ -1,0 +1,156 @@
+// unizik-ml-fraud-frontend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELLED
+  BLOCKED
+}
+
+enum TransactionStatus {
+  PENDING
+  CLEARED
+  BLOCKED
+  FAILED
+}
+
+enum FeeCategory {
+  TUITION
+  ACCEPTANCE
+  ICT_INFRASTRUCTURE
+  LIBRARY
+  EXAM_CLEARANCE
+}
+
+enum AppealStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Student {
+  id             String          @id @default(uuid())
+  matricNumber   String          @unique @map("matric_number")
+  email          String          @unique
+  password       String          // Hashed bcrypt password
+  firstName      String          @map("first_name")
+  lastName       String          @map("last_name")
+  department     String
+  level          Int             // e.g., 100, 200, 300, 400, 500
+  loginDeviceId  String?         @map("login_device_id") // Baseline hardware hash captured at login
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  // Relational links
+  invoices       FeeInvoice[]
+  transactions   Transaction[]
+  auditLogs      FraudAuditLog[]
+  appeals        Appeal[]
+
+  @@map("students")
+}
+
+model Admin {
+  id             String          @id @default(uuid())
+  username       String          @unique
+  password       String          // Hashed bcrypt password
+  fullName       String          @map("full_name")
+  role           String          @default("BURSARY_OFFICER") // e.g., BURSARY_OFFICER, ICT_DIRECTOR
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  @@map("admins")
+}
+
+model FeeInvoice {
+  id             String          @id @default(uuid())
+  studentId      String          @map("student_id")
+  category       FeeCategory
+  amount         Float           // Float used for SQLite compatibility
+  session        String          // e.g., "2025/2026"
+  status         InvoiceStatus   @default(PENDING)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  // Relational links
+  student        Student         @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  transactions   Transaction[]
+
+  @@index([studentId, status])
+  @@map("fee_invoices")
+}
+
+model Transaction {
+  id               String            @id @default(uuid())
+  reference        String            @unique
+  invoiceId        String            @map("invoice_id")
+  studentId        String            @map("student_id")
+  amount           Float
+  status           TransactionStatus @default(PENDING)
+
+  // Security & ML Extraction Fields (The Data Feed for Python)
+  deviceId         String            @map("device_id") // Current browser fingerprint hash
+  ipAddress        String            @map("ip_address")
+  asnNumber        Int               @default(0) @map("asn_number")
+  pageDwellTime    Float             @map("page_dwell_time")
+  isOffPeak        Int               @default(0) @map("is_off_peak")
+  hardwareMismatch Int               @default(0) @map("hardware_mismatch")
+
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  // Relational links
+  invoice          FeeInvoice        @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  student          Student           @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  auditLog         FraudAuditLog?
+  appeal           Appeal?
+
+  @@index([deviceId, createdAt])
+  @@index([studentId, status, createdAt])
+  @@index([deviceId, studentId, createdAt])
+  @@map("transactions")
+}
+
+model FraudAuditLog {
+  id             String      @id @default(uuid())
+  transactionId  String      @unique @map("transaction_id")
+  studentId      String      @map("student_id")
+  prediction     Int         // 0 = Legitimate, 1 = Fraudulent
+  confidence     Float       // AI Probability score
+  verdict        String      // "LEGITIMATE" or "FRAUDULENT"
+  explanation    String      // Complete white-box justification string
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  // Relational links
+  transaction    Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  student        Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([verdict, createdAt])
+  @@map("fraud_audit_logs")
+}
+
+model Appeal {
+  id             String       @id @default(uuid())
+  transactionId  String       @unique @map("transaction_id")
+  studentId      String       @map("student_id")
+  reason         String       // Student's explanation for false-positive anomaly
+  status         AppealStatus @default(PENDING)
+  adminNotes     String?      @map("admin_notes")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  // Relational links
+  transaction    Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@map("appeals")
+}
