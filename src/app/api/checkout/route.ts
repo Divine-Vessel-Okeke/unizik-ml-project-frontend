@@ -25,7 +25,7 @@ const checkoutSchema = z.object({
  * If not, flags as high risk (asnNumber = 1).
  */
 async function getNetworkRiskScore(ip: string): Promise<number> {
-  if (ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.")) return 0;
+  if (ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1" || ip.startsWith("192.168.") || ip.startsWith("::ffff:192.168.")) return 0;
 
   try {
     const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,isp,query`);

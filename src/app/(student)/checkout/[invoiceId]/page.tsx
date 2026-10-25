@@ -7,8 +7,7 @@ import { CreditCard, AlertCircle, RefreshCw, Lock, Building2, AlertTriangle, Che
 import { generateDeviceFingerprint } from "@/lib/fingerprint";
 import StudentHeader from "@/components/StudentHeader";
 import BackButton from "@/components/BackButton";
-import DiagnosticsPanel from "@/components/DiagnosticsPanel";
-import useRequireStudent from '@/lib/useRequireStudent';
+import DefenseTelemetrySwitch, { SimulationMode } from "@/components/DefenseTelemetrySwitch";
 
 export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: string }> }) {
   const router = useRouter();
@@ -22,20 +21,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
   const [mismatch, setMismatch] = useState(0);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   
-  // Diagnostics panel persisted values (read from localStorage to avoid provider coupling)
-  const getDiag = () => {
-    try {
-      const raw = localStorage.getItem('unizik_diag_values');
-      const editedRaw = localStorage.getItem('unizik_diag_edited');
-      return { values: raw ? JSON.parse(raw) : {}, isEdited: editedRaw ? JSON.parse(editedRaw) : false };
-    } catch (e) {
-      return { values: {}, isEdited: false };
-    }
-  };
-
-  const { values: diagValues, isEdited } = getDiag();
-
-  useRequireStudent();
+  // Clean component state for your live defense presentation
+  const [simMode, setSimMode] = useState<SimulationMode>("NORMAL");
 
   // High-precision timer for behavioral dwell-time telemetry
   const startTime = useRef(performance.now());
@@ -44,8 +31,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
     // 1. Retrieve authenticated student session
     const storedUser = localStorage.getItem("unizik_user");
     if (storedUser) {
-      const parsed = JSON.parse(storedUser);
-      setUser(parsed);
+      setUser(JSON.parse(storedUser));
     } else {
       router.push("/login");
       return;
@@ -57,7 +43,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
       .then((data) => {
         if (data.success) {
           // CRITICAL PRE-FLIGHT GUARDRAIL (gemini.md L111985):
-          // Check if the latest transaction attempt on this invoice was BLOCKED by the ML engine.
+          // Check if the latest transaction attempt on this invoice was BLOCKED.
           // If blocked AND no APPROVED appeal exists, force the block screen.
           const latestTx = data.invoice.transactions?.[0];
           const isTxBlocked =
@@ -80,7 +66,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
     const initTelemetry = async () => {
       const currentFP = await generateDeviceFingerprint();
       setDeviceId(currentFP);
-      try { localStorage.setItem('unizik_device_id', currentFP); } catch (e) {}
 
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
@@ -92,8 +77,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
     };
 
     initTelemetry();
-    // reset dwell timer when invoice changes / on navigation
-    startTime.current = performance.now();
   }, [invoiceId, router]);
 
   const handlePay = async () => {
@@ -102,32 +85,27 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
     setProcessing(true);
     setPaymentError(null);
 
-    // Build payload using Diagnostics panel values when available. Read diagnostics snapshot fresh.
-    const currentDiagRaw = localStorage.getItem('unizik_diag_values');
-    const currentEditedRaw = localStorage.getItem('unizik_diag_edited');
-    const currentDiag = currentDiagRaw ? JSON.parse(currentDiagRaw) : {};
-    const currentEdited = currentEditedRaw ? JSON.parse(currentEditedRaw) : false;
-
+    // DETERMINISTIC TELEMETRY INJECTION: Maps your component toggle directly into the API payload
     const realDwellTime = (performance.now() - startTime.current) / 1000;
+    const targetDwellTime = simMode === "BOT" ? 0.12 : realDwellTime;
+    
+    const targetDeviceId = simMode === "BOT" 
+      ? "UNIZIK_FP_MALICIOUS_BOT_001" 
+      : simMode === "SPOOF" 
+      ? "UNIZIK_FP_PROXY_CLUSTER_999" 
+      : deviceId;
+      
+    const targetMismatch = simMode === "SPOOF" ? 1 : mismatch;
 
     const payload = {
       studentId: user.id,
       invoiceId: invoiceId,
       amount: invoice.amount || 0,
       reference: `PAY_${Date.now().toString(36).toUpperCase()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-      deviceId: currentDiag.deviceId || deviceId,
-      pageDwellTime: currentDiag.page_dwell_time_seconds ?? realDwellTime,
-      hardwareMismatch: currentDiag.session_hardware_mismatch ?? mismatch,
-      // If the diagnostics panel has edits, include explicit feature overrides and mark source SIMULATED
-      overrideFeatures: currentEdited ? {
-        device_student_count_24h: currentDiag.device_student_count_24h,
-        page_dwell_time_seconds: currentDiag.page_dwell_time_seconds,
-        is_high_risk_asn: currentDiag.is_high_risk_asn,
-        failed_attempts_1h: currentDiag.failed_attempts_1h,
-        session_hardware_mismatch: currentDiag.session_hardware_mismatch,
-        is_off_peak_hour: currentDiag.is_off_peak_hour,
-      } : undefined,
-      telemetry_source: currentEdited ? 'SIMULATED' : 'LIVE',
+      deviceId: targetDeviceId,
+      pageDwellTime: targetDwellTime,
+      hardwareMismatch: targetMismatch,
+      simMode: simMode,
     };
 
     try {
@@ -296,7 +274,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
               </div>
             </div>
 
-            <DiagnosticsPanel />
+            <DefenseTelemetrySwitch 
+              simMode={simMode} 
+              onModeChange={setSimMode} 
+              disabled={processing} 
+            />
 
             <div className="space-y-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
