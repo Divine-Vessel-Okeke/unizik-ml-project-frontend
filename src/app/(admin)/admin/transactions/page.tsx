@@ -1,3 +1,6 @@
+// src/app/(admin)/admin/transactions/page.tsx
+"use client";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Filter, RefreshCw, AlertTriangle, CheckCircle2, XCircle, ArrowUpRight } from "lucide-react";
@@ -16,6 +19,7 @@ const FEE_CATEGORIES = [
 const STATUS_OPTIONS = [
   { id: "ALL", label: "All Statuses" },
   { id: "CLEARED", label: "Cleared" },
+  { id: "PENDING", label: "Pending" },
   { id: "BLOCKED", label: "Blocked" },
 ];
 
@@ -31,27 +35,11 @@ export default function AdminTransactionsPage() {
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
 
-  // Pagination
+  // pagniation
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Authorization Check
-  useEffect(() => {
-    const storedUser = localStorage.getItem("unizik_user");
-    if (!storedUser) {
-      router.push("/login");
-      return;
-    }
-    const parsedUser = JSON.parse(storedUser);
-    const userRole = parsedUser.role || (parsedUser.username ? "BURSARY_DIRECTOR" : "STUDENT");
-
-    if (userRole !== "ADMIN" && userRole !== "BURSARY_DIRECTOR") {
-      router.push("/dashboard");
-      return;
-    }
-  }, [router]);
-
-  // Fetch Ledger Transactions
+  // 1. Updated fetchLedger to set the total pages state
   const fetchLedger = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -67,7 +55,7 @@ export default function AdminTransactionsPage() {
 
       if (res.ok && data.success) {
         setTransactions(data.transactions);
-        setTotalPages(data.pages || 1);
+        setTotalPages(data.pages); // CRITICAL: Updates the page UI
       } else {
         setError(data.error || "Failed to retrieve records.");
       }
@@ -76,52 +64,54 @@ export default function AdminTransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedStatus, selectedCategory, searchTerm, currentPage]);
+  }, [selectedStatus, selectedCategory, searchTerm, currentPage]); // Added currentPage dependency
 
+  // 2. Add this useEffect to trigger fetch when page changes
   useEffect(() => {
     fetchLedger();
   }, [fetchLedger]);
+
+  useEffect(() => {
+    // Authorization Check
+    const storedUser = localStorage.getItem("unizik_user");
+    if (!storedUser) {
+      router.push("/login");
+      return;
+    }
+    const parsedUser = JSON.parse(storedUser);
+    const userRole = parsedUser.role || (parsedUser.username ? "BURSARY_DIRECTOR" : "STUDENT");
+
+    if (userRole !== "ADMIN" && userRole !== "BURSARY_DIRECTOR") {
+      router.push("/dashboard");
+      return;
+    }
+
+    fetchLedger();
+  }, [fetchLedger, router]);
 
   const handleResetFilters = () => {
     setSearchTerm("");
     setSelectedStatus("ALL");
     setSelectedCategory("ALL");
-    setCurrentPage(1);
-  };
-
-  const handleStatusChange = (value: string) => {
-    setSelectedStatus(value);
-    setCurrentPage(1);
-  };
-
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
-    setCurrentPage(1);
-  };
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      setCurrentPage(1);
-      fetchLedger();
-    }
   };
 
   // Dynamic Ledger Metrics based on active view
   const totalClearedRevenue = transactions
-    .filter((tx) => tx.status === "CLEARED" || tx.status === "PAID")
-    .reduce((sum, tx) => sum + (tx.amount || tx.invoice?.amount || 0), 0);
+    .filter((tx) => tx.status === "CLEARED")
+    .reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
-  const blockedCount = transactions.filter(
-    (tx) => tx.status === "BLOCKED" || tx.status === "DECLINED"
-  ).length;
+  const blockedCount = transactions.filter((tx) => tx.status === "BLOCKED").length;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16 selection:bg-[#001C3D] selection:text-white">
+
       <AdminHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+
         {/* Navigation Back Button */}
         <BackButton />
+
 
         {/* Page Title & Context Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -192,7 +182,7 @@ export default function AdminTransactionsPage() {
                 placeholder="Search by Matric No., Student Name, or Payment Ref..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
+                onKeyDown={(e) => e.key === "Enter" && fetchLedger()}
                 className="block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#001C3D] transition-all"
               />
             </div>
@@ -201,13 +191,11 @@ export default function AdminTransactionsPage() {
             <div className="md:col-span-3">
               <select
                 value={selectedStatus}
-                onChange={(e) => handleStatusChange(e.target.value)}
+                onChange={(e) => setSelectedStatus(e.target.value)}
                 className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:bg-white focus:border-[#001C3D] transition-all cursor-pointer"
               >
                 {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.label}
-                  </option>
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
                 ))}
               </select>
             </div>
@@ -216,13 +204,11 @@ export default function AdminTransactionsPage() {
             <div className="md:col-span-3">
               <select
                 value={selectedCategory}
-                onChange={(e) => handleCategoryChange(e.target.value)}
+                onChange={(e) => setSelectedCategory(e.target.value)}
                 className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:bg-white focus:border-[#001C3D] transition-all cursor-pointer"
               >
                 {FEE_CATEGORIES.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.label}
-                  </option>
+                  <option key={cat.id} value={cat.id}>{cat.label}</option>
                 ))}
               </select>
             </div>
@@ -293,7 +279,7 @@ export default function AdminTransactionsPage() {
                         </td>
 
                         <td className="py-4 px-6 font-semibold text-slate-700 whitespace-nowrap">
-                          {tx.invoice?.category?.replace(/_/g, " ") || "General Fee"}
+                          {tx.invoice?.category?.replace("_", " ") || "General Fee"}
                         </td>
 
                         <td className="py-4 px-6 font-mono text-slate-600 font-bold whitespace-nowrap">
@@ -326,16 +312,13 @@ export default function AdminTransactionsPage() {
                         </td>
 
                         {/* Remark Cell */}
-                        <td
-                          className="py-4 px-6 text-slate-600 max-w-[220px] truncate"
-                          title={tx.auditLog?.explanation || (isPending ? "Awaiting Gateway Processing" : "Standard Clearance Processed")}
-                        >
+                        <td className="py-4 px-6 text-slate-600 max-w-[220px] truncate" title={tx.auditLog?.explanation || (isPending ? "Awaiting Gateway Processing" : "Standard Clearance Processed")}>
                           <span className={isBlocked ? "font-semibold text-rose-700" : isPending ? "font-medium text-amber-600" : ""}>
                             {tx.auditLog?.explanation || (isPending ? "Awaiting Gateway Processing" : "Standard Clearance Processed")}
                           </span>
                         </td>
 
-                        {/* Action Cell */}
+                        {/* action cell */}
                         <td className="py-4 px-6 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
                             {isSuccess && (
@@ -349,11 +332,10 @@ export default function AdminTransactionsPage() {
                             )}
                             <button
                               onClick={() => router.push(`/admin/forensics/${tx.id}`)}
-                              className={`px-3 py-1.5 font-bold rounded-lg text-[11px] transition-all inline-flex items-center gap-1 cursor-pointer shadow-2xs ${
-                                isBlocked
-                                  ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
-                                  : "bg-[#001C3D] hover:bg-[#00152e] text-white"
-                              }`}
+                              className={`px-3 py-1.5 font-bold rounded-lg text-[11px] transition-all inline-flex items-center gap-1 cursor-pointer shadow-2xs ${isBlocked
+                                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
+                                : "bg-[#001C3D] hover:bg-[#00152e] text-white"
+                                }`}
                               title="Inspect White-Box AI Forensics"
                             >
                               <span>Forensics</span>
@@ -368,28 +350,26 @@ export default function AdminTransactionsPage() {
               </tbody>
             </table>
 
-            {/* Pagination Controls */}
             <div className="flex items-center justify-between p-4 border-t border-slate-100">
               <button
-                disabled={currentPage <= 1 || loading}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="px-4 py-2 border rounded-xl text-xs font-bold disabled:opacity-50 cursor-pointer"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+                className="px-4 py-2 border rounded-xl text-xs font-bold disabled:opacity-50"
               >
                 Previous
               </button>
-              <span className="text-xs font-bold text-slate-600">
-                Page {currentPage} of {totalPages}
-              </span>
+              <span className="text-xs font-bold">Page {currentPage} of {totalPages}</span>
               <button
-                disabled={currentPage >= totalPages || loading}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="px-4 py-2 border rounded-xl text-xs font-bold disabled:opacity-50 cursor-pointer"
+                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage(p => p + 1)}
+                className="px-4 py-2 border rounded-xl text-xs font-bold disabled:opacity-50"
               >
                 Next
               </button>
             </div>
           </div>
         </div>
+
       </main>
     </div>
   );

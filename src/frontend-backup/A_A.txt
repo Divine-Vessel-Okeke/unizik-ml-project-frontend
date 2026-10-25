@@ -4113,3 +4113,476 @@ Do not upgrade Prisma. Do not use tsx. Do not use heredocs. Do not add includes 
 
 
 
+
+
+
+# 📋 FULL CONTEXT HANDOFF — DELTA_07
+
+Save as `DELTA_07.md`. Paste as message 1 in new chat.
+
+---
+
+## ⚠️⚠️⚠️ CRITICAL RULES (user emphasized 5+ times)
+
+> **"Stop making changes. I want to be as closest as literally possible to the original copy."**
+> **"Do NOT be making changes. My objective is not to optimize or scale — but RECOVER the lost code from Gemini."**
+> **"Always go for the most latest version of a file so use that."**
+> **"Merge all commands into one block so I can copy faster, except there is a core need to separate them."**
+> **"Before assuming a file does not exist, we must check gemini.md."**
+
+### Only allowed modifications:
+1. Unescape pandoc artifacts (`\|` `\>` `\[` `\]` `\$` `\&` `` \` `` `\${`)
+2. Fix header path (`unizik-ml-fraud-frontend/src/...` → `src/...`)
+3. Strip pandoc HTML wrapper junk
+4. Merge split lines from sed boundary
+5. Unescape `&amp;` → `&`
+6. **Controlled, pre-agreed fixes only** — documented in this handoff
+
+### Forbidden:
+- Adding `include` fields not in gemini.md
+- Splitting queries
+- Reformatting, JSDoc, renaming vars
+- Removing unused imports
+- Any "improvement"
+- **Writing code when gemini.md has it**
+
+### Extraction protocol:
+- `sed -n 'START,ENDp' ~/Downloads/gemini.md` directly to console
+- **NO `> file.txt`** — user copies from terminal
+- Multiple greps → combine into one block unless they must separate
+- Check gemini.md FIRST before assuming a file is missing
+
+### Latest version rule:
+When a file has multiple emissions OR patches, ALWAYS apply latest emission + all fragments in order. Never deliver intermediate versions.
+
+---
+
+## 1. User & Project
+
+- **Name:** Okeke Divine-Vessel · Reg 2022514075 · UNIZIK Final Year B.Sc. CS
+- **Frontend dir:** `~/Projects/unizik-ml-project/frontend/`
+- **Backend dir:** `~/Projects/unizik-ml-project/backend/`
+- **Node:** v24.22.1
+- **Source of truth:** `~/Downloads/gemini.md` (~260K lines)
+- **GitHub:** `github.com/Divine-Vessel-Okeke/unizik-ml-project-frontend`
+- **Topic:** *"Development of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification"*
+- **Branding:** Navy `#001C3D` + Orange `#F58220`
+
+---
+
+## 2. LOCKED ARCHITECTURE
+
+| Thing | Locked = |
+|---|---|
+| Prisma | **6.19.0** (never 7/8) |
+| Seed runner | **`ts-node --compiler-options {"module":"CommonJS"}`** |
+| Tailwind | **v4** → `@import "tailwindcss"` + `@tailwindcss/postcss` |
+| `datasource.url` | inside `schema.prisma` |
+| Provider | **`sqlite`** |
+| Package ops | `npm install pkg@ver` (never heredoc) |
+
+---
+
+## 3. 📦 BACKEND ML — Fully recovered & operational
+
+### Directory structure on disk:
+```
+~/Projects/unizik-ml-project/backend/
+├── app/
+│   ├── config.py              # MODELS_DIR, DATA_DIR, MODEL_PATH
+│   ├── data_generator.py      # 5,150 synthetic rows (3000 student + 650 cafe + 1500 fraud)
+│   ├── main.py                # Flask on 127.0.0.1:5000, /api/health, /api/predict
+│   ├── model_engine.py        # FraudDetectionEngine — loads .joblib, clamps features, generates explanation
+│   └── train_model.py         # DecisionTreeClassifier(gini, max_depth=5)
+├── models/
+│   └── unizik_fraud_decision_tree.joblib  ✅ PRESENT
+├── data/
+│   └── unizik_transactions.csv  ✅ PRESENT
+├── backend-backup/            # Backup of same artifacts
+├── requirements.txt           # Flask, scikit-learn, pandas, joblib, numpy
+├── README.md
+├── .venv/                     # Virtualenv
+└── .git/
+```
+
+### Model details:
+- **Algorithm:** `DecisionTreeClassifier(criterion='gini', max_depth=5, min_samples_split=10, min_samples_leaf=5, random_state=42)`
+- **Features (exact order):** `device_student_count_24h`, `page_dwell_time_seconds`, `is_high_risk_asn`, `failed_attempts_1h`, `session_hardware_mismatch`, `is_off_peak_hour`
+- **Clamping in `model_engine.py`:**
+  - device_count: 0–150
+  - dwell: 0.1–180.0
+  - failed_attempts: 0–20
+  - binaries: 0/1
+- **Output:** `{status, verdict, prediction, confidence, explanation}` where explanation starts with `"BLOCKED BY AI: ..."`
+
+### How to start Flask for demo:
+```bash
+cd ~/Projects/unizik-ml-project/backend
+.venv/bin/python app/main.py
+# Should print: * Running on http://127.0.0.1:5000
+```
+
+---
+
+## 4. 📦 Files DELIVERED This Session
+
+### Just completed (verify user saved):
+
+| File | Source | Notes |
+|---|---|---|
+| `src/components/DefenseTelemetrySwitch.tsx` | L140619 | 3-mode switch: NORMAL / BOT / SPOOF |
+| `src/app/support/appeal/page.tsx` | L115449 | Student appeal submission form with Suspense wrapper |
+| `src/app/checkout/[invoiceId]/page.tsx` | L140770 + L111985 pre-flight patch | Uses `simMode`, `<DefenseTelemetrySwitch>` |
+| `src/lib/fraud-engine.ts` | L140760 (pure gemini.md) | Removed Copilot `overrideFeatures`, fixed `\|\|` bug |
+| `src/app/api/checkout/route.ts` | 1-line fix at `getNetworkRiskScore` | Added `::ffff:127.0.0.1` check |
+| `src/app/dashboard/page.tsx` | L146252 (latest, full state machine) | 5 states: PAID / PENDING / BLOCKED / REVIEW PENDING / REVIEW CONCLUDED |
+
+### Delivered earlier in session (should also be saved):
+
+| File | Source |
+|---|---|
+| `src/app/register/page.tsx` | L149647 |
+| `src/app/invoices/page.tsx` | L118443 → L119100 |
+| `src/app/api/invoices/route.ts` | L126784 + L127198 patch |
+| `src/app/api/auth/register/route.ts` | L150483 |
+| `src/app/api/appeals/route.ts` | L146661 (already latest — no change needed) |
+| `src/app/receipt/[txId]/page.tsx` | L249530 |
+| `src/components/BackButton.tsx` | Ghost style per screenshot (user-driven) |
+| `src/app/(admin)/admin/dashboard/page.tsx` | L130437 |
+
+### Orphaned files (can `rm`, not imported anymore):
+- `src/components/DiagnosticsPanel.tsx` — old Copilot extension
+- `src/lib/useRequireStudent.ts` — old Copilot extension
+
+---
+
+## 5. 🔧 Critical Fixes Applied This Session
+
+### Fix 1 — `fraud-engine.ts` `||` bug
+
+**Problem:** Copilot version had:
+```ts
+if (payload.simMode === 'BOT') {
+  deviceStudentCount24h = deviceStudentCount24h || 65;  // 1 || 65 = 1 ← BUG
+  failedAttempts1h = failedAttempts1h || 14;            // 1 || 14 = 1 ← BUG
+}
+```
+
+Flask received `[1, 0.12, 1, 1, 0, 1]` instead of `[65, 0.12, 1, 14, 0, 1]`.
+
+**Fix:** Replaced with gemini.md version (direct assignment):
+```ts
+if (payload.simMode === 'BOT') {
+  deviceStudentCount24h = 65;
+  failedAttempts1h = 14;
+  targetDwellTime = 0.12;
+  targetAsn = 1;
+  offPeakFlag = 1;
+}
+```
+
+**Verified working** — Flask now receives:
+- BOT: `[65, 0.12, 1, 14, 0, 1]` ✅
+- SPOOF: `[24, 3.742, 1, 6, 1, 0]` ✅
+
+### Fix 2 — `api/checkout/route.ts` — IPv4-mapped IPv6 detection
+
+**Problem:** `getNetworkRiskScore()` checked `ip === "127.0.0.1"` but dev env sends `::ffff:127.0.0.1`. Falls through to external ip-api.com, which fails to resolve, returns `1` (high risk) → asn=1 in NORMAL mode.
+
+**Fix:**
+```ts
+if (ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1" || ip.startsWith("192.168.") || ip.startsWith("::ffff:192.168.")) return 0;
+```
+
+**Verified:** BOT/SPOOF still force asn=1 (correct — presets override). NORMAL should now send asn=0 (needs re-verification).
+
+### Fix 3 — `dashboard/page.tsx` state machine
+
+**Old disk version had:**
+- No `"use client"` awareness of BLOCKED state
+- `Invoice.status` interface: `"PENDING" | "PAID" | "CANCELLED"` (missing BLOCKED!)
+- PAID rows: "Verified" static text (not a button)
+- No appeal state handling at all
+
+**Replaced with L146252 — full state machine:**
+```ts
+const isActivelyBlocked = (inv.status === "BLOCKED" || latestTx?.status === "BLOCKED") && appealStatus !== "APPROVED";
+```
+
+| State | Badge | Action button |
+|---|---|---|
+| PAID | Green "PAID & CLEARED" | Green "View Receipt" → `/receipt/${clearedTx.id}` |
+| PENDING (no blocked tx) | Amber "PENDING CLEARANCE" | Orange "Pay Now" |
+| BLOCKED + no appeal | Red "SECURITY HOLD" | Red "Request Review" → `/support/appeal?invoiceId=X` |
+| BLOCKED + appeal PENDING | Blue "REVIEW PENDING" (pulsing clock) | Gray disabled "Under Review" |
+| BLOCKED + appeal REJECTED | Dark red "REVIEW CONCLUDED: NOT APPROVED" + admin notes below | Red "Request Review" (resubmit) |
+| BLOCKED + appeal APPROVED | Falls through to PENDING → Pay Now | Orange "Pay Now" |
+
+**Also:** Uses `<StudentHeader user={user} />` component (not inline header with wrong `/UNIZIK_Main_Logo_.png` path).
+
+---
+
+## 6. 🚨 CURRENT BLOCKER — `"use client"` missing on admin transactions page
+
+**Build error from Next.js 16:**
+```
+You're importing a module that depends on `useEffect` into a React Server Component module.
+./src/app/(admin)/admin/transactions/page.tsx (1:27)
+```
+
+**File on disk starts with:**
+```tsx
+import React, { useState, useEffect, useCallback } from "react";
+```
+
+**Missing `"use client"` at top.** Also need to check if other admin pages have same issue.
+
+**Diagnostic block (run these 2 combined):**
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+echo "=== 1. Current file head ==="
+head -10 "src/app/(admin)/admin/transactions/page.tsx"
+
+echo ""
+echo "=== 2. gemini.md emissions of this file ==="
+grep -nE '// .*admin/transactions/page\.tsx' ~/Downloads/gemini.md | grep -vE 'You said|user-query'
+
+echo ""
+echo "=== 3. Does original gemini.md have 'use client' right after header? ==="
+grep -nB1 -A2 '// .*admin/transactions/page\.tsx' ~/Downloads/gemini.md | grep -vE 'You said|user-query' | head -30
+
+echo ""
+echo "=== 4. Scan for OTHER admin pages with same bug ==="
+for f in $(find src/app -path '*/admin/*' -name '*.tsx' 2>/dev/null); do
+  if [ -f "$f" ] && grep -qE 'useState|useEffect|useCallback|useRef' "$f" && ! grep -q '"use client"' "$f"; then
+    echo "❌ $f — uses hooks but missing 'use client'"
+  fi
+done
+```
+
+**Expected fix (after confirming gemini.md source):** Add `"use client";` as first line before imports. Header comment can stay above.
+
+**Need to verify:** was this missing from gemini.md original (a bug) or did I strip it during cleanup?
+
+---
+
+## 7. 📊 Current DB State
+
+```
+fee_invoices:  BLOCKED|3, PAID|7, PENDING|2
+transactions:  BLOCKED|3, CLEARED|7, PENDING|1
+appeals:       (didn't query — user has 3 appeals per screenshot)
+```
+
+**Demo data ready** for all 5 dashboard states once admin pages are in place.
+
+**To check appeal states:**
+```bash
+sqlite3 ~/Projects/unizik-ml-project/frontend/prisma/dev.db \
+  "SELECT a.id, a.status, a.admin_notes, i.category 
+   FROM appeals a 
+   JOIN transactions t ON t.id = a.transaction_id 
+   JOIN fee_invoices i ON i.id = t.invoice_id;"
+```
+
+---
+
+## 8. 🎯 REMAINING FILES TO RECOVER
+
+| # | File | gemini.md source | Status |
+|---|---|---|---|
+| 1 | `src/app/(admin)/admin/transactions/page.tsx` | need latest emission | **BROKEN — missing "use client"** |
+| 2 | `src/app/admin/appeals/page.tsx` | L148586 (`AdminAppealsPage`) | **Already in prior extraction — can deliver** |
+| 3 | `src/app/admin/velocity/page.tsx` | L134312 | Not extracted |
+| 4 | `src/app/api/admin/velocity/route.ts` | L134192 | Not extracted |
+| 5 | `src/app/admin/forensics/[txId]/page.tsx` | Need grep | Not extracted |
+| 6 | `src/app/register/admin/page.tsx` | L152537 | LOW priority |
+| 7 | `src/app/api/auth/register-admin/route.ts` | L151101 | LOW priority |
+
+### Also verify these are correct on disk:
+- `src/app/(admin)/admin/dashboard/page.tsx` — delivered L130437, but should confirm has `"use client"` (likely same bug)
+
+---
+
+## 9. 🧪 Test Plan (once `"use client"` fixed)
+
+### Backend + Frontend startup:
+```bash
+# Terminal 1 — Flask ML
+cd ~/Projects/unizik-ml-project/backend && .venv/bin/python app/main.py
+
+# Terminal 2 — Frontend (wait for Flask "Running on http://127.0.0.1:5000")
+cd ~/Projects/unizik-ml-project/frontend && npm run dev
+```
+
+### Test 1 — Dashboard state machine
+Login as student (`2022514001` / `password123`) → `/dashboard`
+
+Expected:
+- 7 PAID rows → green "View Receipt" button
+- 2 PENDING rows → orange "Pay Now"
+- 3 BLOCKED rows → varies by appeal state (see §5 Fix 3 table)
+
+### Test 2 — NORMAL checkout (Flask should be called)
+Click Pay Now on PENDING → keep toggle NORMAL → click Pay → receipt page
+
+Flask terminal should print:
+```
+[DEBUG] Python ML received features: [1, X, 0, 1, 0, 0]
+```
+Note **asn=0** (not 1) — confirms IPv4-mapped fix works.
+
+### Test 3 — BOT checkout (already verified)
+Toggle BOT → click Pay → block screen
+
+Flask should print:
+```
+[DEBUG] Python ML received features: [65, 0.12, 1, 14, 0, 1]
+```
+
+### Test 4 — Full appeal loop
+1. BOT → block screen → click "Request Review from Bursary"
+2. `/support/appeal?invoiceId=X` loads → submit reason
+3. Login as admin → `/admin/appeals` → approve
+4. Login as student → dashboard row should now show amber "PENDING CLEARANCE" (approval flips invoice status)
+5. Pay Now → succeeds ✅
+
+### Test 5 — Verify audit log
+```bash
+sqlite3 ~/Projects/unizik-ml-project/frontend/prisma/dev.db \
+  "SELECT a.explanation FROM fraud_audit_logs a ORDER BY a.created_at DESC LIMIT 2;"
+```
+Recent entries should start with `"BLOCKED BY AI:"` (from Python), NOT `"BLOCKED BY FALLBACK HEURISTIC:"` (from Next.js).
+
+---
+
+## 10. 🔑 Key Backend/Frontend Contract
+
+### `simMode` handling:
+- Frontend sends `simMode: "NORMAL" | "BOT" | "SPOOF"`
+- `api/checkout` Zod schema accepts it
+- `fraud-engine.ts` overrides feature values when simMode ≠ NORMAL:
+  - **BOT:** `[65, 0.12, 1, 14, 0, 1]` — cybercafe botnet + bot-timing
+  - **SPOOF:** `[24, X, 1, 6, 1, 0]` — hardware hijack + card testing
+- Even if Python fails: fallback heuristic forces FRAUDULENT when `simMode !== 'NORMAL'`
+- **THESIS DEFENSE SAFETY GUARDRAIL** (section 5 in fraud-engine.ts): forces FRAUDULENT if BOT/SPOOF but Python returned LEGITIMATE
+
+### Why 3 modes rather than editable panel:
+- Gemini's original design (L139280+)
+- Simpler demo narrative
+- Presets traceable to gemini.md
+
+### IP detection:
+- Localhost returns `0` (safe) via `::ffff:127.0.0.1` check
+- External → ip-api.com lookup
+- Nigerian telco (MTN/Glo/Airtel/9Mobile) → `0`
+- Other → `1`
+
+---
+
+## 11. ⚠️ Behavioral Rules (carry forward)
+
+**Do:**
+- Trust recovered `package.json` — Prisma 6.19, ts-node, @tailwindcss/postcss
+- Use `sed -n 'START,ENDp' gemini.md` directly — no `> file.txt`
+- Combine multiple greps into one block unless they must separate
+- When multiple emissions exist, use the LATEST
+- Check gemini.md FIRST before assuming a file is missing
+- Read terminal errors literally
+- Preserve Navy `#001C3D` + Orange `#F58220`
+
+**Don't:**
+- Add `include` fields not in gemini.md (except pre-agreed fixes documented here)
+- Split queries "for performance"
+- Use `tsx` for seed
+- Use `@tailwind` directives
+- Write `cat > package.json` heredocs
+- Argue with user's memory
+- Deliver intermediate versions when later emission exists
+- Assume files are missing without grepping gemini.md first
+
+**Ignore (never "fix"):**
+- `package.json#prisma deprecated` warning
+- `Update available 6.19.0 -> 8.0.0-rc.27` (never upgrade)
+- `npm warn install-scripts` (spurious)
+- `4 high severity vulnerabilities` (dev deps)
+- `eslint@9.39.5 deprecated`
+- `&amp;` in text content (markdown escape, harmless)
+
+---
+
+## 12. 📌 Restart Message (paste as message 1 in new chat)
+
+```
+Continuing UNIZIK fraud detection frontend recovery from DELTA_07.
+
+⚠️ CRITICAL RULES (user said 5+ times):
+- "Stop making changes. I want to be closest to original copy."
+- "Do NOT be making changes. Objective is RECOVER not optimize."
+- "Always use latest version of a file."
+- "Merge commands into one block unless must separate."
+- "Before assuming file missing, check gemini.md."
+
+ONLY allowed modifications: pandoc unescape, header path fix, strip HTML junk, merge split lines, &amp;→&, documented pre-agreed fixes.
+
+EXTRACTION: sed -n 'START,ENDp' ~/Downloads/gemini.md → console output (NO file redirect).
+
+LOCKED: Prisma 6.19.0, ts-node seed, @tailwindcss/postcss, @import "tailwindcss", sqlite.
+
+BACKEND ML — FULLY OPERATIONAL:
+- Flask on 127.0.0.1:5000 (python app/main.py)
+- Model: models/unizik_fraud_decision_tree.joblib ✅ present
+- Dataset: data/unizik_transactions.csv ✅ present
+- 6 features: device_student_count_24h, page_dwell_time_seconds, is_high_risk_asn, failed_attempts_1h, session_hardware_mismatch, is_off_peak_hour
+
+FILES DELIVERED THIS SESSION (user should have saved):
+- src/components/DefenseTelemetrySwitch.tsx (L140619)
+- src/app/support/appeal/page.tsx (L115449)
+- src/app/checkout/[invoiceId]/page.tsx (L140770 + L111985 patch)
+- src/lib/fraud-engine.ts (L140760 gemini.md version — fixed || bug)
+- src/app/api/checkout/route.ts (1-line ::ffff: fix for localhost IP detection)
+- src/app/dashboard/page.tsx (L146252 — full state machine with View Receipt, SECURITY HOLD, REVIEW PENDING, REVIEW CONCLUDED badges + admin notes)
+- Earlier: register, invoices, appeals, receipt, BackButton, admin dashboard
+
+FIXES VERIFIED WORKING:
+1. fraud-engine.ts || bug fixed — Flask now receives correct feature vectors
+2. BOT mode: Flask gets [65, 0.12, 1, 14, 0, 1] ✅
+3. SPOOF mode: Flask gets [24, X, 1, 6, 1, 0] ✅
+4. NORMAL mode still needs verification of asn=0
+
+CURRENT BLOCKER:
+Next.js 16 build error — src/app/(admin)/admin/transactions/page.tsx
+Missing "use client" directive. Uses useState/useEffect but no directive at top.
+
+DIAGNOSTIC NEEDED before fix:
+1. Check gemini.md emissions of admin/transactions/page.tsx
+2. Determine if "use client" was in gemini.md original or stripped during cleanup
+3. Scan for other admin pages with same bug
+
+REMAINING FILES TO RECOVER:
+1. src/app/(admin)/admin/transactions/page.tsx — BROKEN (missing "use client")
+2. src/app/admin/appeals/page.tsx (L148586 AdminAppealsPage — already extracted, can deliver)
+3. src/app/admin/velocity/page.tsx (L134312)
+4. src/app/api/admin/velocity/route.ts (L134192)
+5. src/app/admin/forensics/[txId]/page.tsx (need grep)
+6. src/app/register/admin/page.tsx (L152537, LOW priority)
+7. src/app/api/auth/register-admin/route.ts (L151101, LOW priority)
+
+DB STATE: fee_invoices BLOCKED|3 PAID|7 PENDING|2; transactions BLOCKED|3 CLEARED|7 PENDING|1. Demo data ready.
+
+NEXT ACTION:
+1. Diagnose "use client" issue (check gemini.md source)
+2. Fix admin/transactions/page.tsx and any other affected admin pages
+3. Deliver admin/appeals/page.tsx from L148586 (already extracted)
+4. Extract + deliver admin/velocity page + API
+5. Grep for admin/forensics page
+6. Full end-to-end test (BOT → block → appeal → admin approve → retry)
+
+Do not upgrade Prisma. Do not use tsx. Do not use heredocs. Do not add includes not in gemini.md. Check gemini.md before claiming file missing.
+```
+
+---
+
+**End of delta summary.** Session delivered: DefenseTelemetrySwitch, support/appeal page, checkout with simMode, fraud-engine with fixed `||` bug, checkout API with IPv4-mapped fix, dashboard with full 5-state machine. Verified Flask receives correct feature vectors for BOT/SPOOF modes. Blocker: missing `"use client"` on admin/transactions page (and possibly other admin pages). Remaining: 4 admin files. ⚡
