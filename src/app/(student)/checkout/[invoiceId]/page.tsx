@@ -1,4 +1,4 @@
-// unizik-ml-fraud-frontend/src/app/checkout/[invoiceId]/page.tsx
+// src/app/checkout/[invoiceId]/page.tsx
 "use client";
 
 import React, { useState, useEffect, useRef, use } from "react";
@@ -56,7 +56,20 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setInvoice(data.invoice);
+          // CRITICAL PRE-FLIGHT GUARDRAIL (gemini.md L111985):
+          // Check if the latest transaction attempt on this invoice was BLOCKED by the ML engine.
+          // If blocked AND no APPROVED appeal exists, force the block screen.
+          const latestTx = data.invoice.transactions?.[0];
+          const isTxBlocked =
+            latestTx &&
+            (latestTx.status === "BLOCKED" || latestTx.status === "DECLINED");
+          const isAppealApproved = latestTx?.appeal?.status === "APPROVED";
+
+          if (isTxBlocked && !isAppealApproved) {
+            setInvoice({ ...data.invoice, status: "BLOCKED" });
+          } else {
+            setInvoice(data.invoice);
+          }
         } else {
           setPaymentError("Unable to load billing details for this invoice.");
         }

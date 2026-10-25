@@ -11,11 +11,11 @@ export default function BackButton() {
   return (
     <button
       onClick={() => router.back()}
-      className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-600 hover:text-white hover:bg-[#001C3D] rounded-xl transition-all duration-150 border border-slate-200 hover:border-[#001C3D] shadow-2xs cursor-pointer"
-      title="Go Back"
+      className="inline-flex items-center gap-2 text-sm font-bold text-[#001C3D] hover:text-[#F58220] transition-colors duration-150 cursor-pointer group"
+      title="Return to Previous Page"
     >
-      <ArrowLeft className="w-3.5 h-3.5" />
-      <span>Back</span>
+      <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+      <span>Return to Previous Page</span>
     </button>
   );
 }

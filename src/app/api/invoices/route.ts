@@ -21,7 +21,23 @@ export async function GET(req: Request) {
     const invoiceId = searchParams.get('invoiceId');
     
     if (invoiceId) {
-        const invoice = await prisma.feeInvoice.findUnique({ where: { id: invoiceId } });
+        // PRE-FLIGHT GUARDRAIL (gemini.md L111868 + L111985):
+        // Include transactions + auditLog + appeal so the checkout page can
+        // detect BLOCKED transactions and approved appeals before rendering
+        // the payment form.
+        const invoice = await prisma.feeInvoice.findUnique({
+          where: { id: invoiceId },
+          include: {
+            transactions: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              include: {
+                auditLog: true,
+                appeal: true,
+              },
+            },
+          },
+        });
         return NextResponse.json({ success: true, invoice });
     }
     if (!studentId) {
