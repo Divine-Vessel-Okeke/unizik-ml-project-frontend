@@ -1,0 +1,17 @@
+app/
+├── (auth)/
+│   ├── login/                 # Student & Admin MFA Authentication
+│   └── register/              # New Student Portal Onboarding
+├── (student)/
+│   ├── dashboard/             # Academic Standing & Financial Overview
+│   ├── invoices/              # Fee Selection & Invoice Generation
+│   ├── checkout/[invoiceId]/  # The Real-Time Telemetry Checkout Form
+│   ├── receipt/[txId]/        # Cryptographic e-Receipt & QR Verification
+│   └── support/appeal/        # False-Positive Remediation & Unblock Appeals
+└── (admin)/
+    ├── admin/dashboard/       # Real-Time Telemetry Command Center
+    ├── admin/transactions/    # Financial Ledger & Filtering Engine
+    ├── admin/forensics/[txId]/ # White-Box AI Audit Drawer
+    ├── admin/appeals/         # Dispute Review & Manual Override Queue
+    └── admin/velocity/        # Hardware Fingerprint & Cybercafe Tracking
+    - register/
