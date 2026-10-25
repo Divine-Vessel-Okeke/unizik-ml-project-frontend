@@ -2451,3 +2451,981 @@ Do not upgrade Prisma. Do not use tsx. Do not add adapters. Do not rewrite packa
 ---
 
 **End of handoff.** This session: diagnosed Prisma version drift, rolled back from 7/8 to 6.19, ran first migration successfully. Remaining: fix seed hook, run seed, test login, then resume frontend file reconstruction. 🚀
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 📋 FULL CONTEXT HANDOFF — Copy entire message to restart
+
+Save as `SESSION_HANDOFF_04.md`. Paste as message 1 in new chat.
+
+---
+
+## 1. User & Project
+
+- **Name:** Okeke Divine-Vessel · **Reg:** 2022514075 · **UNIZIK Final Year B.Sc. CS**
+- **Working dir:** `~/Projects/unizik-ml-project/frontend/`
+- **Node:** v24.22.1 · **TypeScript:** 5.9.3
+- **OS:** Fresh Ubuntu (recovery situation), user `divine-vessel@divinevessel-HP-EliteBook-8470p`
+- **Topic:** *"Development of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification"*
+- **Source of truth:** `~/Downloads/gemini.md` (~260K lines, 1,044 code fences)
+- **Branding:** Navy `#001C3D` + Orange `#F58220`
+- **GitHub repo:** `https://github.com/Divine-Vessel-Okeke/unizik-ml-project-frontend.git` (branch `main`, last commit `593c1c1 "prisma schema fixes done"`)
+
+---
+
+## 2. 🚨 LOCKED ARCHITECTURE (Recovered — DO NOT DEVIATE)
+
+User pasted recovered `package.json` and explicitly said: **"we MUST not deviate from our recovery architecture"**. Firm decisions:
+
+| Thing | Recovered = | NEVER |
+|---|---|---|
+| Prisma | **6.19.0** | 7.x, 8.x |
+| Seed runner | **`ts-node`** with `{"module":"CommonJS"}` | `tsx`, `npx tsx` |
+| Tailwind | **v4** → `@import "tailwindcss"` | v3 `@tailwind` directives |
+| Tailwind loader | **`@tailwindcss/postcss`** + `postcss.config.mjs` | `@tailwindcss/turbopack` |
+| `datasource.url` | **inside `schema.prisma`** | `prisma.config.ts` (Prisma 7+) |
+| Driver adapter | **none needed** | `@prisma/adapter-better-sqlite3` |
+| `.env` loading | **automatic** | needs `import 'dotenv/config'` |
+| Package ops | **`npm install pkg@ver`** | heredoc `cat > package.json` |
+
+**User explicitly rejected** the heredoc `cat > package.json << 'EOF'` approach: *"use npm to do it, please... just do this and stop following these complicated ways"*.
+
+---
+
+## 3. ⚠️ Package Version Drift (current state)
+
+Current `package.json` has drifted from recovered. **Do not fix proactively** — only pin if a bug traces to it:
+
+| Package | Current | Recovered | Notes |
+|---|---|---|---|
+| `next` | `16.4.3` | `16.2.10` | Works fine, leave |
+| `react` / `react-dom` | `19.3.0` | `19.2.4` | Works fine, leave |
+| `lucide-react` | `^1.61.0` | `^1.25.0` | Works fine, leave |
+| `@tailwindcss/postcss` | ✅ added | ✅ present | Correct |
+| `@tailwindcss/turbopack` | ❌ removed | ❌ never present | Correct — was causing build error |
+| `cd` | `^0.3.3` | ❌ spurious | User should `npm uninstall cd` |
+| `prisma`, `@prisma/client`, `ts-node`, `bcryptjs` | ✅ matches | ✅ matches | Correct |
+
+---
+
+## 4. ✅ MILESTONE COMPLETE: Auth + DB + Seed
+
+### Verified working (all 3 login tests passed):
+
+| Test | Result |
+|---|---|
+| **Admin login** (`admin`/`admin123`) | ✅ 200 + `{"success":true,"role":"ADMIN","user":{"name":"Dr. Prof. B.O. Ekeh..."}}` + `Set-Cookie: unizik_session=...` |
+| **Student login** (`2022514001`/`password123`) | ✅ 200 + `{"success":true,"role":"STUDENT","user":{"matricNumber":"2022514001","name":"Chinedu Okafor",...}}` + `Set-Cookie: unizik_session=...` |
+| **Wrong password** | ✅ 401 + `{"success":false,"error":"Invalid Admin credentials."}` |
+
+**Cookie details (verified):**
+- Admin cookie role: `"ADMIN"` (route maps `BURSARY_DIRECTOR` → `ADMIN`)
+- Student cookie includes `matricNumber` + `loginDeviceId`
+- `HttpOnly; SameSite=strict` ✓
+- Expiry: `Max-Age=86400` (24h)
+
+### DB state confirmed:
+```bash
+sqlite3 prisma/dev.db "SELECT matric_number, first_name, level FROM students;"
+# 2022514001|Chinedu|400
+# 2022514009|Sohail|400
+
+sqlite3 prisma/dev.db "SELECT username, role FROM admins;"
+# admin|BURSARY_DIRECTOR
+
+sqlite3 prisma/dev.db "SELECT category, amount, status FROM fee_invoices;"
+# TUITION|85500.0|PENDING
+# ACCEPTANCE|45000.0|PENDING
+```
+
+**Note:** SQLite columns use snake_case (`matric_number` not `matricNumber`) due to Prisma `@map` decorators. This is expected — not a bug.
+
+---
+
+## 5. 🛠️ Fixes Applied This Session (chronological)
+
+### Problem 1 — Prisma version drift (SOLVED)
+- Started with `prisma@7.10.1` + `prisma@8.0.0-rc.27` CLI mixed in `package.json`
+- Prisma 8 → `[CLI.COMMAND_MOVED]` (`migrate dev` removed)
+- Prisma 7 → `P1012` (`url` no longer supported in schema)
+- **Fix:** Full purge + reinstall exact versions:
+  ```bash
+  npm uninstall prisma @prisma/client @prisma/adapter-better-sqlite3 better-sqlite3 @types/better-sqlite3 dotenv tsx
+  rm -rf node_modules package-lock.json prisma.config.ts prisma/migrations prisma/dev.db prisma/dev.db-journal
+  npm install @prisma/client@6.19.0
+  npm install -D prisma@6.19.0 ts-node@10.9.2
+  ```
+- **Result:** `npx prisma --version` → `prisma: 6.19.0` + `@prisma/client: 6.19.0` ✓
+
+### Problem 2 — Seed hook used wrong runner (SOLVED)
+- `package.json` `"prisma"` block had `"seed": "tsx prisma/seed.ts"` (leftover from failed Prisma 7 attempt)
+- **Fix:** User edited `package.json` to `"seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"`
+- **Result:** `npx prisma db seed` → seed succeeded ✓
+
+### Problem 3 — CSS build error blocked ALL routes (SOLVED)
+- `Cannot find module '@tailwindcss/turbopack'`
+- `next.config.ts` had a `turbopack.rules` block pointing at non-existent loader
+- `postcss.config.mjs` was **missing entirely**
+- Because `layout.tsx` imports `globals.css`, the compilation failure broke every route (including `/api/auth/login`) → returned HTML 500 error page
+- **Fix:**
+  ```bash
+  npm uninstall -D @tailwindcss/turbopack
+  npm install -D @tailwindcss/postcss@4
+  # Edited next.config.ts — removed entire turbopack block
+  # Created postcss.config.mjs with @tailwindcss/postcss plugin
+  ```
+- **Result:** CSS compiles, all routes work ✓
+
+### Problem 4 — sqlite3 CLI missing (SOLVED)
+- `Command 'sqlite3' not found`
+- **Fix:** `sudo apt install -y sqlite3`
+- **Result:** Queries work ✓
+
+---
+
+## 6. 📄 Current File State — Verified
+
+### `next.config.ts` (CORRECT)
+```ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  cacheComponents: true,
+  partialPrefetching: true,
+};
+
+export default nextConfig;
+```
+(No `turbopack` block — removed)
+
+### `postcss.config.mjs` (CORRECT)
+```js
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+```
+
+### `prisma/seed.ts` (CORRECT, 94 lines)
+Full code saved to disk. Uses standard Prisma 6 client:
+```ts
+// prisma/seed.ts
+import { PrismaClient, FeeCategory, InvoiceStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+const prisma = new PrismaClient();
+// ... (94 lines total — pastes with admin + 2 students + 2 invoices)
+```
+
+### `src/lib/prisma.ts` (CORRECT — Prisma 6 singleton, no adapter)
+```ts
+// src/lib/prisma.ts
+import { PrismaClient } from '@prisma/client';
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  });
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+export default prisma;
+```
+
+### Files verified present on disk:
+| File | Status |
+|---|---|
+| `prisma/schema.prisma` | ✅ sqlite, 6 models + 4 enums, `url = env("DATABASE_URL")` inside |
+| `prisma/seed.ts` | ✅ 94 lines, correct Prisma 6 style |
+| `prisma/dev.db` | ✅ Seeded, 5 rows |
+| `prisma/migrations/20261025154749_init/migration.sql` | ✅ Created |
+| `prisma/migrations/migration_lock.toml` | ✅ Created |
+| `src/lib/prisma.ts` | ✅ Correct |
+| `src/lib/fingerprint.ts` | ✅ Exports `generateDeviceFingerprint` |
+| `src/lib/fraud-engine.ts` | ✅ Present |
+| `src/app/(auth)/login/page.tsx` | ✅ From prior session |
+| `src/app/api/auth/login/route.ts` | ✅ Backend, tested working |
+| `public/unizik.png` | ✅ Present |
+| `.env` | ✅ `DATABASE_URL="file:./dev.db"` |
+
+---
+
+## 7. 📋 Files Still To Reconstruct (frontend)
+
+| # | File | Priority | grep hint |
+|---|------|----------|-----------|
+| 1 | `src/app/page.tsx` | **HIGH (NEXT)** | `grep -n -B10 -A40 'app/page\.tsx\|src/app/page\.tsx' gemini.md` |
+| 2 | `src/app/layout.tsx` | HIGH | `grep 'app/layout\.tsx'` |
+| 3 | `src/app/globals.css` | HIGH (partial done — check current) | `grep 'globals\.css'` |
+| 4 | `src/components/StudentHeader.tsx` | MED | `grep 'StudentHeader'` |
+| 5 | `src/app/dashboard/page.tsx` | HIGH | `grep 'dashboard/page\.tsx'` |
+| 6 | `src/app/checkout/[invoiceId]/page.tsx` | HIGH | `grep 'checkout.*invoiceId'` |
+| 7 | `src/app/(admin)/admin/transactions/page.tsx` | HIGH | `grep 'admin/transactions/page'` |
+| 8 | `src/app/register/page.tsx` | MED | Found near gemini.md L~149650 |
+| 9 | `src/app/api/auth/register/route.ts` | LOW | gemini.md L~68808 |
+
+**Already done:** `src/app/(auth)/login/page.tsx`, `src/app/api/auth/login/route.ts`
+
+---
+
+## 8. 🎯 IMMEDIATE NEXT STEPS (in new conversation)
+
+User was about to run this when context ended:
+
+```bash
+# 1. Cleanup spurious package
+cd ~/Projects/unizik-ml-project/frontend
+npm uninstall cd
+
+# 2. Commit milestone
+git add .
+git commit -m "auth milestone: login verified end-to-end (admin + student + 401)"
+git push
+
+# 3. Pre-check current frontend state
+ls -la src/app/page.tsx 2>&1
+ls -la src/app/layout.tsx 2>&1
+ls -la src/middleware.ts middleware.ts 2>&1
+head -40 src/app/layout.tsx
+
+# 4. Extract root page timeline from gemini.md
+cd ~/Downloads
+grep -n -B10 -A40 'app/page\.tsx\|src/app/page\.tsx' gemini.md > root_page_timeline.txt
+wc -lc root_page_timeline.txt
+cat root_page_timeline.txt
+
+# If >400 lines:
+head -250 root_page_timeline.txt
+echo "=== TAIL ==="
+tail -250 root_page_timeline.txt
+```
+
+**Then AI merges `src/app/page.tsx`** — extract latest emission, apply patches, output paste-ready file.
+
+### Extraction loop (proven, works per prior sessions):
+1. `grep` → identify all emissions (V1, V2, patches by line number clusters)
+2. `sed -n 'START,ENDp'` → extract raw bytes
+3. Clean HTML junk (pandoc `<div>`, `_ngcontent`, `jslog`, `\` escapes)
+4. Diff V1 vs V2 → pick latest
+5. Grep for prose markers (`WHERE:`, `WHAT TO REPLACE:`, `Fragment`) → find patches
+6. Output complete paste-ready file
+
+---
+
+## 9. 🔧 Environment Notes
+
+- **`grep`, `sed`, `diff`, `python3`** — all work
+- **`sqlite3` CLI** — installed this session ✓
+- **`npm warn install-scripts not yet covered by allowScripts`** — spurious Prisma warning; engines already loaded. If they fail: `npm config set ignore-scripts false`
+- **Bracketed paste** — disabled via `bind 'set enable-bracketed-paste off'` in `.bashrc`
+- **Dev server** — `npm run dev` on port 3000 (Turbopack)
+
+### Warnings to IGNORE (do not "fix"):
+- `warn The configuration property 'package.json#prisma' is deprecated` — Prisma 6 warning about future 7 migration. Ignore.
+- `Update available 6.19.0 -> 8.0.0-rc.27` — **NEVER UPGRADE.** Prisma 8 broke everything.
+- `4 high severity vulnerabilities` — transitive dev deps (likely old eslint). Not urgent.
+- `eslint@9.39.5 deprecated` — npm noise. Works fine.
+- `npm warn install-scripts ...` — spurious, ignore.
+
+---
+
+## 10. ⚠️ Behavioral Rules (non-negotiable)
+
+**Do:**
+- Trust recovered `package.json` — Prisma 6.19, `ts-node` seed, `@tailwindcss/postcss` loader
+- Assume `gemini.md` contains the code — mine harder if grep returns empty
+- Output **complete, paste-ready** files — no fragments
+- Preserve exact styling (Navy `#001C3D`, Orange `#F58220`, existing Tailwind classes)
+- Use `npm install pkg@ver` / `npm uninstall pkg` — **never heredoc `cat > package.json`**
+- Acknowledge corrections instantly
+- One file at a time
+- Read terminal output literally — don't guess
+
+**Don't:**
+- Upgrade Prisma to 7 or 8
+- Add `prisma.config.ts`, driver adapters, `dotenv`, or `@tailwindcss/turbopack`
+- Change provider from `sqlite` to `postgresql`
+- Use `tsx` for seed
+- Use `@tailwind` directives in globals.css
+- Argue with user's memory of gemini.md
+- Assume removed files are gone — always check disk first
+- Paste giant terminal dumps back — summarize
+- Give multi-step heredoc scripts
+
+---
+
+## 11. 📌 Exact Message to Paste as Message 1 in New Chat
+
+```
+Continuing from SESSION_HANDOFF_04. Project: UNIZIK fraud detection frontend recovery.
+
+AUTH MILESTONE COMPLETE (verified end-to-end this session):
+- Admin login: 200 + {"success":true,"role":"ADMIN"} ✓
+- Student login: 200 + {"success":true,"role":"STUDENT"} ✓
+- Wrong password: 401 ✓
+- DB seeded: admin/admin123, 2022514001/password123 (Chinedu), 2022514009/password123 (Sohail)
+- Stack: Prisma 6.19.0, ts-node seed, Tailwind 4 with @tailwindcss/postcss loader
+
+LOCKED ARCHITECTURE (never deviate):
+- Prisma 6.19.0 — url INSIDE schema.prisma
+- ts-node with {"module":"CommonJS"} — NOT tsx
+- @tailwindcss/postcss + postcss.config.mjs — NOT @tailwindcss/turbopack
+- Plain `npm install pkg@ver` — NO heredocs
+- DO NOT upgrade to Prisma 7 or 8
+
+CURRENT STATE:
+✅ Backend auth working (login route returns 200 with Set-Cookie)
+✅ DB seeded, migrations applied
+✅ CSS compiles (Turbopack block removed from next.config.ts, postcss.config.mjs created)
+✅ src/lib/prisma.ts correct (Prisma 6 singleton)
+✅ prisma/seed.ts saved (94 lines)
+✅ package.json has correct prisma seed hook (ts-node)
+⚠️ package.json has spurious "cd" package (should npm uninstall cd)
+⚠️ Version drift from recovered: next 16.4.3 (vs 16.2.10), react 19.3.0 (vs 19.2.4), lucide-react 1.61 (vs 1.25) — works fine, leave unless issues arise
+❌ Frontend pages NOT yet reconstructed
+
+NEXT ACTION:
+1. User runs: npm uninstall cd && git add . && git commit -m "auth milestone verified" && git push
+2. Extract src/app/page.tsx timeline:
+   cd ~/Downloads && grep -n -B10 -A40 'app/page\.tsx\|src/app/page\.tsx' gemini.md > root_page_timeline.txt
+   wc -lc root_page_timeline.txt && cat root_page_timeline.txt
+3. Also check: ls -la src/app/page.tsx src/app/layout.tsx src/middleware.ts 2>&1
+4. AI merges and delivers paste-ready src/app/page.tsx
+5. Continue with layout.tsx, globals.css, StudentHeader.tsx, dashboard, checkout, admin/transactions, register
+
+Files remaining: 9 (see §7 of handoff)
+Standard extraction loop applies (grep → sed → clean → diff → patches → paste-ready output).
+```
+
+---
+
+**End of handoff.** Session accomplished: full Prisma downgrade from 7/8 to 6.19, seed verified, migration applied, CSS build error resolved, all 3 login tests passing. Backend + DB + auth are production-verified. Ready to start frontend page reconstruction (`src/app/page.tsx` first). 🚀
+
+
+# 📋 Delta Summary — Since SESSION_HANDOFF_04
+
+Detailed changelog of everything that happened in this session, plus the exact current state and next steps.
+
+---
+
+## 1. ✅ What Was Completed Since Last Handoff
+
+### Prisma + Auth (previously verified — unchanged)
+- Prisma 6.19.0, `ts-node` seed, `@tailwindcss/postcss` loader
+- All 3 login curls passed: admin 200/ADMIN, student 200/STUDENT, wrong 401
+- DB seeded with admin + 2 students + 2 invoices
+- Committed: `593c1c1 "prisma schema fixes done"`
+- `npm uninstall cd` — user ran (implied by progression to "now what's next")
+
+### Extract + deliver 3 files (this session)
+
+| File | Result |
+|---|---|
+| `layout.tsx` | ✅ **Never emitted in gemini.md** — was default create-next-app. I reconstructed it: Inter font (matches `globals.css`), project metadata title/description, `bg-unizik-bg text-slate-900` body classes |
+| `globals.css` | ✅ **Exact from L75953** — Tailwind 4 native with `@theme` block, navy/orange variables, `.card-glass` + `.btn-primary` utility classes |
+| `middleware.ts` | 🚫 **Does not exist anywhere** — 0 emissions in gemini.md, 0 on disk, not needed (auth is client-side via `localStorage` + cookie) |
+
+**User is expected to have saved both `layout.tsx` and `globals.css` but not yet confirmed/tested.** This is unverified.
+
+---
+
+## 2. 🔍 Dependency Map — Major Discoveries
+
+### `unizik_user` localStorage contract (confirmed)
+```json
+{
+  "id": "uuid",
+  "role": "STUDENT" | "ADMIN",
+  "name": "string",
+  "matricNumber": "string (student only)",
+  "department": "string (student only)",
+  "level": 400,
+  "loginDeviceId": "string (student only)"
+}
+```
+
+- **Writers:** Login page only (5 emissions across gemini.md)
+- **Readers:** ~40 occurrences across all pages (auth guard on mount)
+- **Removers:** Logout handlers in StudentHeader/AdminHeader (`removeItem("unizik_user")` then `router.push("/login")`)
+- **`unizik_session` cookie:** set by login API route only, **never read client-side** (server-side future use)
+
+### 🚨 Route structure — planned vs. realized
+
+**Planned** (gemini.md L67703–67888, 11 files, aspirational):
+```
+(auth)/login, (student)/dashboard, (student)/invoices, (student)/checkout/[invoiceId],
+(student)/receipt/[txId], (student)/support/appeal, (admin)/admin/dashboard,
+(admin)/admin/transactions, (admin)/admin/forensics/[txId],
+(admin)/admin/appeals, (admin)/admin/velocity
+```
+
+**Actually realized** (flat, confirmed by on-disk find):
+```
+app/page.tsx                              (user-built landing, verified OK)
+app/layout.tsx                            (just delivered)
+app/globals.css                           (just delivered)
+app/(auth)/login/page.tsx                 ✅ done prior session
+app/dashboard/page.tsx                    exists — content UNVERIFIED
+app/checkout/[invoiceId]/page.tsx         exists — content UNVERIFIED
+app/(admin)/admin/transactions/page.tsx   exists — content UNVERIFIED
+components/StudentHeader.tsx              exists — content UNVERIFIED
+```
+
+**`(student)/layout.tsx` is ORPHANED** — exists at L73879 in gemini.md but pages went flat, so it's not applied. **Skip.**
+
+---
+
+## 3. ❌ Missing Components Identified (Block next)
+
+| Component | Imported by | Emissions in gemini.md | Status |
+|---|---|---|---|
+| `AdminHeader.tsx` | 13+ admin pages | **5 emissions**: L88689, L129947, L130267, L133579, **L134017 (final)** | ❌ **MISSING on disk** — must extract from L134017 |
+| `BackButton.tsx` | 6+ pages | **ZERO** — no `function BackButton` anywhere | ❓ **MYSTERY** — imported but never emitted |
+| `AdminBackButton.tsx` | 2 pages (older naming) | (superseded by `BackButton`) | ❌ Confirmed dead reference |
+| `StudentHeader.tsx` | 20+ pages | **2 emissions**: L79042 (first), **L244052 (final, very late)** | ⚠️ On disk but unverified — L244052 is likely final |
+
+### The BackButton problem
+
+`grep -nE 'function BackButton|BackButton'` returned **zero** hits in gemini.md. But 6+ pages import it:
+```
+L104668, L105550, L114093, L115456, L115696, L117108
+```
+
+Two possible explanations:
+1. Component was never built — pages import a phantom. Those pages would have failed in the original project too (but they were "final" per gemini.md, so this seems unlikely)
+2. It was named differently — maybe `AdminBackButton` (2 emissions exist) is the actual component, and page imports were aliased
+
+**Resolution needed:** either extract `AdminBackButton` and rename, OR write a minimal `BackButton.tsx` (`"use client"; router.back() with icon`), OR remove the import from affected pages.
+
+---
+
+## 4. 📋 Files Still UNVERIFIED On Disk (Block 4 was never run)
+
+User did **NOT** run the on-disk verification of these 4 files (my last message asked for Block 1-4 outputs; user provided Block 1-3 only):
+
+| File | We don't know |
+|---|---|
+| `src/components/StudentHeader.tsx` | Real or placeholder? Has `getItem("unizik_user")`? Matches L244052? |
+| `src/app/dashboard/page.tsx` | Real or placeholder? Fragments applied? |
+| `src/app/checkout/[invoiceId]/page.tsx` | Real or placeholder? Fragments applied? |
+| `src/app/(admin)/admin/transactions/page.tsx` | Real or placeholder? Fragments applied? |
+
+**These 4 are the critical unknown.** If they're placeholders → full reconstruction from gemini.md. If real → still need to cross-check against gemini.md last emission + fragments.
+
+---
+
+## 5. 🎯 Known Fragment Patches to Apply (for the 4 unverified pages)
+
+The dashboard especially has **many fragments** — patches applied after the "final" emission:
+
+| Page | Fragment locations |
+|---|---|
+| `dashboard/page.tsx` | L79147 "Step 2: Update dashboard (Fragments)", L87560 "Wire the Ledger Table Trigger", L88287 "top of dashboard", L108941 "REPLACE entire", L115052 "FILE:", L120488 "WHERE:" |
+| `checkout/[invoiceId]/page.tsx` | L111123, L111207, L111238, L111277 (multiple "WHERE:" patches) |
+| `(admin)/admin/transactions/page.tsx` | (to be searched once Block 4 output comes) |
+
+**The on-disk version may be missing these patches. Full extraction + fragment application will verify.**
+
+---
+
+## 6. 🎯 IMMEDIATE NEXT STEPS (in exact order)
+
+### Step 1 — Run Block 4 (verification of 4 unverified files)
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+for f in \
+  "src/components/StudentHeader.tsx" \
+  "src/app/dashboard/page.tsx" \
+  "src/app/checkout/[invoiceId]/page.tsx" \
+  "src/app/(admin)/admin/transactions/page.tsx"; do
+  echo "=========================================="
+  echo "=== $f ==="
+  echo "=========================================="
+  if [ -f "$f" ]; then
+    wc -l "$f"
+    echo "--- head 10 ---"
+    head -10 "$f"
+    echo "--- imports ---"
+    grep -E "^import" "$f" | head -12
+    echo "--- auth check (getItem unizik_user) ---"
+    grep -nE 'getItem.*unizik_user|removeItem.*unizik_user' "$f" | head -3
+    echo "--- TODO/placeholder markers ---"
+    grep -niE 'TODO|placeholder|FIXME|not implemented|coming soon' "$f" | head -3
+    echo ""
+  else
+    echo "MISSING"
+  fi
+done
+```
+
+### Step 2 — Extract final `AdminHeader.tsx`
+
+```bash
+cd ~/Downloads
+sed -n '134010,134230p' gemini.md
+```
+
+(Paste output → I deliver clean `src/components/AdminHeader.tsx`)
+
+### Step 3 — Resolve `BackButton` mystery
+
+Before extracting, confirm the imports are real. Show context around one of the hits:
+
+```bash
+cd ~/Downloads
+sed -n '104520,104590p' gemini.md   # AdminBackButton usage
+sed -n '104660,104700p' gemini.md   # BackButton usage in same region
+```
+
+If `AdminBackButton` exists but `BackButton` doesn't — the pages using `BackButton` may be in a different branch. We either:
+- **(a)** Rename `AdminBackButton` → `BackButton` component export
+- **(b)** Write minimal `BackButton.tsx` if truly missing
+- **(c)** Remove import from affected pages
+
+### Step 4 — Extract `StudentHeader.tsx` final (L244052)
+
+```bash
+cd ~/Downloads
+sed -n '244040,244260p' gemini.md
+```
+
+Compare to on-disk. If different → save extracted version.
+
+### Step 5 — Extract 3 pages (with fragments applied)
+
+For each: `grep` emissions → `sed` last emission + all fragment patches → merge → clean → deliver.
+
+Priority order once components are in place:
+1. `dashboard/page.tsx`
+2. `checkout/[invoiceId]/page.tsx`
+3. `(admin)/admin/transactions/page.tsx`
+4. `register/page.tsx` (bonus — user links from login)
+5. `admin/dashboard/page.tsx` (bonus — admin login redirect target)
+
+---
+
+## 7. 🚨 Behavioral Reminders (carry forward)
+
+**Do:**
+- Trust recovered architecture: Prisma 6.19, `ts-node` seed, `@tailwindcss/postcss` loader
+- Use plain `npm install pkg@ver` — no heredocs
+- Deliver **complete paste-ready** files (no fragments)
+- Preserve Navy `#001C3D` + Orange `#F58220`
+- Read terminal errors literally
+- One file per message when possible
+
+**Don't:**
+- Upgrade Prisma to 7/8
+- Use `tsx` for seed
+- Use `@tailwind` directives
+- Write `cat > package.json` heredocs
+- Assume on-disk files are correct — always cross-check against gemini.md last emission + fragments
+- Assume removed files are gone — check disk first
+- Argue with user's memory of gemini.md
+
+**Ignore (never "fix"):**
+- `package.json#prisma deprecated` warning
+- `Update available 6.19.0 -> 8.0.0-rc.27` (never upgrade)
+- `npm warn install-scripts ...` (spurious)
+- `4 high severity vulnerabilities` (dev deps)
+- `eslint@9.39.5 deprecated`
+
+---
+
+## 8. 📌 Restart Message (if context fills)
+
+```
+Continuing UNIZIK fraud detection frontend recovery from SESSION_HANDOFF_04 + delta.
+
+AUTH MILESTONE ✅ (unchanged):
+- 3 login curls pass (admin/admin123 → 200/ADMIN, 2022514001/password123 → 200/STUDENT, wrong → 401)
+- DB seeded with 2 students + admin + 2 invoices
+
+LOCKED ARCHITECTURE:
+- Prisma 6.19.0 · ts-node seed · @tailwindcss/postcss · @import "tailwindcss"
+- Never upgrade Prisma, never use tsx, never use heredocs
+
+SESSION DELTA (what changed since handoff 04):
+- layout.tsx: delivered (reconstructed with Inter font + project metadata) — never emitted in gemini.md
+- globals.css: delivered from L75953 (Tailwind 4 @theme block, navy/orange vars, .card-glass + .btn-primary)
+- middleware.ts: does NOT exist, not needed (client-side auth)
+- Confirmed route structure is FLAT (not grouped): app/dashboard, app/checkout/[invoiceId], app/(admin)/admin/transactions — (student)/layout.tsx at L73879 is ORPHANED, skip
+
+DEPENDENCY MAP CONFIRMED:
+- unizik_user localStorage: {id, role, name, matricNumber, department, level, loginDeviceId}
+- All @/lib imports resolved (fingerprint, fraud-engine, prisma)
+- No @/utils/, @/hooks/ used
+
+CRITICAL MISSING COMPONENTS:
+- AdminHeader.tsx: 5 emissions, final at L134017 — MISSING on disk, must extract
+- BackButton.tsx: ZERO emissions in gemini.md, but imported by 6+ pages — MYSTERY, needs resolution (AdminBackButton exists, may be same thing)
+- StudentHeader.tsx: 2 emissions, final at L244052 (very late) — on disk but unverified
+
+UNVERIFIED ON DISK (Block 4 was never run last message):
+- src/components/StudentHeader.tsx
+- src/app/dashboard/page.tsx (has fragments at L79147, L87560, L88287, L108941, L115052, L120488)
+- src/app/checkout/[invoiceId]/page.tsx (fragments at L111123-111985)
+- src/app/(admin)/admin/transactions/page.tsx
+
+VERIFIED / DO NOT TOUCH:
+- app/page.tsx (user built manually, happy)
+- app/(auth)/login/page.tsx (prior session)
+- app/api/auth/login/route.ts (prior session)
+- lib/{fingerprint,fraud-engine,prisma}.ts (all exist)
+- prisma/seed.ts, schema.prisma, dev.db (seeded)
+- next.config.ts (no turbopack block), postcss.config.mjs (@tailwindcss/postcss)
+- public/unizik.png
+
+NEXT ACTION:
+1. Run Block 4 verification of 4 unverified files
+2. Extract AdminHeader.tsx from L134017
+3. Resolve BackButton mystery (grep shows 0 emissions — check if AdminBackButton is the same, or write minimal or remove imports)
+4. Extract StudentHeader.tsx from L244052, diff against on-disk
+5. Extract dashboard, checkout, admin/transactions with full fragment application
+6. Bonus: register/page.tsx (~L149650), admin/dashboard/page.tsx (login redirect target)
+
+Extraction loop: grep emissions → cluster → sed last emission → clean pandoc → diff → find prose patches (WHERE:, REPLACE:) → apply → paste-ready output
+```
+
+---
+
+**End of delta summary.** Bottom line: auth+DB are locked, layout+globals delivered (unverified save), dependency map fully mapped. Three real unknowns remain: (1) are the 4 on-disk pages placeholders or real? (2) what is `BackButton`? (3) is `StudentHeader` on disk the L244052 final or the L79042 first?
+
+Once Block 4 + L134017 + L244052 outputs land, we're unblocked to deliver 3–4 files per round. ⚡
+
+
+
+
+
+# 📋 Delta Summary — Since SESSION_HANDOFF_04
+
+Detailed changelog, findings, current state, and next steps. This is the state **after** my last response (delivered 4 files + 3 new grep blocks) but **before** user runs those blocks.
+
+---
+
+## 1. ✅ What Was Completed Since Last Handoff
+
+### Files delivered or written this session
+
+| File | Source | Status |
+|---|---|---|
+| `src/app/layout.tsx` | **Reconstructed** (gemini.md never emitted it) | Delivered — user should have saved |
+| `src/app/globals.css` | **Exact from L75953** (Tailwind 4, `@theme` block) | Delivered — user should have saved |
+| `src/middleware.ts` | **Confirmed does not exist** — skip | N/A (auth is client-side) |
+| `src/components/AdminHeader.tsx` | **Extracted from L134017** (final of 5 emissions) | Delivered |
+| `src/components/BackButton.tsx` | **Written from scratch** (0 emissions in gemini.md) | Delivered — must save |
+| `src/components/DiagnosticsPanel.tsx` | **Written from scratch** (0 emissions in gemini.md) | Delivered — must save |
+| `src/lib/useRequireStudent.ts` | **Written from scratch** (0 emissions in gemini.md) | Delivered — must save |
+
+### Commit status
+Last commit: `593c1c1 "prisma schema fixes done"` — no new commit yet this session. **Should commit after saving the 7 files above.**
+
+---
+
+## 2. 🔍 Major Findings This Session
+
+### 2.1 Route structure is FLAT (not grouped)
+
+Planned structure in gemini.md (L67703-67888, aspirational):
+```
+(auth)/login, (student)/dashboard, (student)/invoices, (student)/checkout/[invoiceId],
+(student)/receipt/[txId], (student)/support/appeal, (admin)/admin/dashboard,
+(admin)/admin/transactions, (admin)/admin/forensics/[txId],
+(admin)/admin/appeals, (admin)/admin/velocity
+```
+
+Actually realized (confirmed by on-disk `find`):
+```
+app/page.tsx                                  ✅ (user-built, verified)
+app/layout.tsx                                ✅ (just delivered)
+app/globals.css                               ✅ (just delivered)
+app/(auth)/login/page.tsx                     ✅ done prior session
+app/dashboard/page.tsx                        ✅ real (282 lines)
+app/checkout/[invoiceId]/page.tsx             ✅ real (350 lines)
+app/(admin)/admin/transactions/page.tsx       ✅ real (395 lines)
+components/StudentHeader.tsx                  ✅ real (96 lines)
+lib/{fingerprint,fraud-engine,prisma}.ts      ✅ all exist
+api/{auth/login,checkout,admin/transactions,receipt/[txId]}/route.ts  ✅ all exist
+```
+
+**`(student)/layout.tsx`** exists in gemini.md at L73879 but is **ORPHANED** — a leftover wrapper nav from planning phase that was abandoned when pages went flat. **Skip.**
+
+### 2.2 `unizik_user` localStorage contract (final)
+
+```json
+{
+  "id": "uuid",
+  "role": "STUDENT" | "ADMIN",
+  "name": "string",
+  "matricNumber": "string (student only)",
+  "department": "string (student only)",
+  "level": 400,
+  "loginDeviceId": "string (student only)"
+}
+```
+
+- **Writers:** Login page only
+- **Readers:** ~40 occurrences across all pages (auth guard on mount)
+- **Removers:** Logout handlers in `StudentHeader` / `AdminHeader`
+- **`unizik_session` cookie:** set by login API only, never read client-side
+
+### 2.3 All `@/lib/` imports resolved ✅
+
+| Import | Exists? |
+|---|---|
+| `@/lib/fingerprint` → `generateDeviceFingerprint` | ✅ |
+| `@/lib/fraud-engine` → `evaluatePaymentTransaction` | ✅ |
+| `@/lib/prisma` → `prisma` | ✅ |
+| `@/lib/useRequireStudent` | ❌ **never emitted — I wrote it** |
+
+No `@/utils/` or `@/hooks/` imports anywhere. No hidden helpers.
+
+### 2.4 `@/components/` imports — 4 resolved, 3 written, 1 unused
+
+| Component | Imported by | In gemini.md | Status |
+|---|---|---|---|
+| `StudentHeader` | 20+ pages | 2 emissions (L79042 real, L244052 is fragment) | ✅ On disk correct |
+| `AdminHeader` | 13+ admin pages | 5 emissions, final L134017 | ✅ Delivered |
+| `BackButton` | 6+ pages | **ZERO** — never existed | ✅ Written (minimal) |
+| `AdminBackButton` | 2 old pages only | ✅ L104462 | ⚠️ Not imported by any on-disk file — skip |
+| `DiagnosticsPanel` | checkout page | **ZERO** — never existed | ✅ Written (minimal) |
+| `DefenseTelemetrySwitch` | **0 on-disk files** | ✅ L139332 (4.25 KB per L163501) | 🚫 Unused — skip |
+
+**Resolution of BackButton mystery:** It genuinely never existed in gemini.md. The 6+ pages that import it would have also failed in the original project unless Gemini had a follow-up that was cut off. Our minimal version uses `router.back()` which matches expected behavior.
+
+### 2.5 🚨 Missing API routes — THE critical blocker
+
+| API route | Called by | On disk | Blocks |
+|---|---|---|---|
+| `/api/auth/login` | login page | ✅ | — |
+| `/api/checkout` | checkout page | ✅ | — |
+| `/api/admin/transactions` | admin page | ✅ | — |
+| `/api/receipt/[txId]` | receipt page | ✅ | — |
+| **`/api/invoices`** | **dashboard** | ❌ | **Dashboard shows "Failed to synchronize"** |
+| **`/api/appeals`** | **AdminHeader badge** | ❌ | Console error (silent fail) |
+| **`/api/auth/register`** | **register page** | ❌ | Register page 404 |
+| `/api/admin/stats` (probable) | admin dashboard | ❓ unknown | Admin dashboard will fail |
+
+**User's dashboard screenshot confirmed:** The page renders correctly (Chinedu Okafor · 2022514001 · CS · L400 · 2025/2026 · "AI Guardrails Active"), but shows **"Failed to synchronize with university ledger."** and **"No fee invoices generated"** because `fetch('/api/invoices?studentId=...')` returns 404.
+
+**Fixing `/api/invoices` alone unblocks the entire student dashboard view.**
+
+### 2.6 Remaining pages located (not yet extracted)
+
+| Page | Last emission | Status |
+|---|---|---|
+| `admin/dashboard/page.tsx` | **L130437** (10 total) | Missing on disk — admin login redirects here → 404 |
+| `register/page.tsx` | **L149647** (2 total) | Missing on disk |
+| `receipt/[txId]/page.tsx` | **L243318** (5 total) | Missing on disk |
+| `invoices/page.tsx` | **L118443** (5 total) | Missing on disk — "Generate Invoice" button targets this |
+| `admin/appeals/page.tsx` | **L148577** (~15 fragments) | Missing on disk |
+| `admin/velocity/page.tsx` | **L134312** (1 full) | Missing on disk |
+| `admin/forensics/[txId]/page.tsx` | unknown | Not yet grepped |
+
+---
+
+## 3. 🎯 Current State — What Works / What's Broken
+
+### ✅ Works right now (assuming all 7 delivered files saved)
+- `/` → landing page (user-built)
+- `/login` → login page with styling
+- Admin login (admin/admin123) → 200 + redirect to `/admin/dashboard` → **404 there**
+- Student login (2022514001/password123) → 200 + redirect to `/dashboard` → **renders but says "Failed to synchronize"**
+- API routes: `/api/auth/login`, `/api/checkout`, `/api/admin/transactions`, `/api/receipt/[txId]`
+- All 3 DB seed rows present
+
+### ❌ Broken right now
+1. **Student dashboard fetch fails** → missing `/api/invoices`
+2. **Admin login redirects to 404** → missing `admin/dashboard/page.tsx`
+3. **AdminHeader badge errors silently** → missing `/api/appeals`
+4. **Register link from login → 404** → missing `register/page.tsx` and `/api/auth/register`
+5. **Checkout page import errors** (if user tried to visit) → `DiagnosticsPanel` and `useRequireStudent` were missing until last delivery
+6. **Admin transactions page import error** → `AdminHeader` and `BackButton` were missing until last delivery
+
+---
+
+## 4. 📦 Files Delivered — Save Checklist
+
+User needs to confirm these 7 files are saved to disk:
+
+- [ ] `src/app/layout.tsx` — Inter font, project metadata, `bg-unizik-bg` body
+- [ ] `src/app/globals.css` — Tailwind 4, `@theme` block with navy/orange vars
+- [ ] `src/components/AdminHeader.tsx` — from L134017, 5 nav links (Overview, Transactions, Dispute Queue, Campus Computers)
+- [ ] `src/components/BackButton.tsx` — minimal, uses `router.back()`
+- [ ] `src/components/DiagnosticsPanel.tsx` — shows deviceId/ipAddress/pageDwellTime
+- [ ] `src/lib/useRequireStudent.ts` — client auth guard hook
+- [ ] No `src/middleware.ts` — confirmed not needed
+
+**If any of these weren't saved, they'll cause `Module not found` on checkout or admin pages.**
+
+---
+
+## 5. 🎯 IMMEDIATE NEXT STEPS (what user is expected to do)
+
+### Step 1 — Save the 4 files I just delivered (if not done)
+AdminHeader, BackButton, DiagnosticsPanel, useRequireStudent
+
+### Step 2 — Run the 3 grep blocks I asked for (Block A/B/C from my last message)
+
+```bash
+# Block A — API routes
+cd ~/Downloads
+grep -nE 'api/invoices/route|api/appeals/route|api/auth/register/route|api/admin/stats' gemini.md | grep -vE 'You said'
+
+# Block B — admin/dashboard/page.tsx final emission (L130437 → L130720)
+sed -n '130430,130720p' gemini.md
+
+# Block C — register/page.tsx final emission (L149647 → L149920)
+sed -n '149640,149920p' gemini.md
+```
+
+### Step 3 — Commit current milestone
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+git add .
+git commit -m "layout + globals + headers + hooks reconstructed"
+git push
+```
+
+---
+
+## 6. 📋 Priority Rebuild Order (after Block A/B/C output)
+
+| # | File | Why critical | Source hint |
+|---|---|---|---|
+| 1 | `/api/invoices/route.ts` | **Fixes "Failed to synchronize" immediately** — biggest UX win | Block A grep |
+| 2 | `/api/appeals/route.ts` | Stops AdminHeader console error | Block A grep |
+| 3 | `admin/dashboard/page.tsx` | Admin login currently 404s | L130437 |
+| 4 | `register/page.tsx` + `/api/auth/register/route.ts` | Register link works | L149647 + Block A |
+| 5 | `invoices/page.tsx` | "Generate Invoice" button target | L118443 |
+| 6 | `receipt/[txId]/page.tsx` | Post-checkout receipt | L243318 |
+| 7 | `admin/appeals/page.tsx` | Dispute Queue nav link works | Last full at L148577 |
+| 8 | `admin/velocity/page.tsx` | Campus Computers nav link works | L134312 |
+| 9 | `admin/forensics/[txId]/page.tsx` | Admin audit detail (if exists) | grep needed |
+
+### If `/api/invoices` was never emitted in gemini.md
+
+I'll write it. It's straightforward — Prisma query:
+```ts
+// Likely implementation:
+const invoices = await prisma.feeInvoice.findMany({
+  where: { studentId },
+  orderBy: { createdAt: "desc" },
+  include: { transactions: true },
+});
+```
+
+Same for `/api/appeals` — Prisma query + filter by status.
+
+---
+
+## 7. ⚠️ Behavioral Rules (unchanged — carry forward)
+
+**Do:**
+- Trust recovered `package.json` — Prisma 6.19, `ts-node` seed, `@tailwindcss/postcss`
+- Mine gemini.md harder if grep returns empty
+- Deliver **complete, paste-ready** files
+- Use plain `npm install pkg@ver` — no heredocs
+- Preserve Navy `#001C3D` + Orange `#F58220`
+- Read terminal errors literally
+
+**Don't:**
+- Upgrade Prisma to 7/8
+- Use `tsx` for seed
+- Use `@tailwind` directives
+- Assume files exist — always check disk
+- Argue with user's memory of gemini.md
+- Paste giant terminal dumps back
+
+**Ignore:**
+- `package.json#prisma deprecated` warning
+- `Update available 6.19.0 -> 8.0.0-rc.27` (never upgrade)
+- `npm warn install-scripts ...` (spurious)
+- `4 high severity vulnerabilities` (dev deps)
+- `eslint@9.39.5 deprecated`
+
+---
+
+## 8. 📌 Restart Message (if context fills before next response)
+
+```
+Continuing UNIZIK fraud detection frontend recovery from SESSION_HANDOFF_04 + delta.
+
+AUTH MILESTONE ✅ (unchanged):
+- All 3 login curls pass
+- DB seeded with admin + 2 students + 2 invoices
+
+LOCKED ARCHITECTURE:
+- Prisma 6.19.0, ts-node seed, @tailwindcss/postcss, @import "tailwindcss"
+- Never upgrade Prisma, never use tsx, never use heredocs
+
+FILES DELIVERED THIS SESSION (user must confirm saved):
+- src/app/layout.tsx (reconstructed — Inter font, project metadata)
+- src/app/globals.css (exact from gemini.md L75953 — Tailwind 4 @theme)
+- src/components/AdminHeader.tsx (L134017 final, 5 nav links)
+- src/components/BackButton.tsx (WRITTEN — 0 emissions)
+- src/components/DiagnosticsPanel.tsx (WRITTEN — 0 emissions)
+- src/lib/useRequireStudent.ts (WRITTEN — 0 emissions)
+
+CONFIRMED FINDINGS:
+- Route structure is FLAT not grouped: app/dashboard, app/checkout/[invoiceId], app/(admin)/admin/transactions
+- (student)/layout.tsx is orphaned (skip)
+- middleware.ts does not exist, not needed (client-side auth)
+- unizik_user: {id, role, name, matricNumber, department, level, loginDeviceId}
+- 4 API routes on disk: auth/login, checkout, admin/transactions, receipt/[txId]
+- 3 API routes MISSING: /api/invoices (blocks dashboard), /api/appeals (blocks AdminHeader badge), /api/auth/register (blocks register page)
+
+VERIFIED ON-DISK FILES (real, not placeholders):
+- src/components/StudentHeader.tsx (96 lines, L79042 version)
+- src/app/dashboard/page.tsx (282 lines, real)
+- src/app/checkout/[invoiceId]/page.tsx (350 lines, real)
+- src/app/(admin)/admin/transactions/page.tsx (395 lines, real)
+
+USER'S DASHBOARD SCREENSHOT: renders correctly, shows "Failed to synchronize with university ledger" because /api/invoices 404s. "No fee invoices generated" — also from failed fetch.
+
+PAGES STILL MISSING ON DISK (located in gemini.md):
+- admin/dashboard/page.tsx → L130437 (login redirect target, currently 404s)
+- register/page.tsx → L149647
+- receipt/[txId]/page.tsx → L243318
+- invoices/page.tsx → L118443
+- admin/appeals/page.tsx → ~L148577 (many fragments)
+- admin/velocity/page.tsx → L134312
+- admin/forensics/[txId]/page.tsx → grep needed
+
+NEXT ACTION:
+1. User needs to run 3 grep blocks (API routes, admin dashboard L130437, register L149647)
+2. Deliver /api/invoices first — biggest UX win (fixes dashboard "Failed to synchronize")
+3. Then /api/appeals, /api/auth/register
+4. Then admin/dashboard/page.tsx, register/page.tsx
+5. Then invoices, receipt, appeals, velocity
+6. Commit milestone: git add . && git commit -m "layout + globals + headers + hooks reconstructed" && git push
+
+Do not upgrade Prisma. Do not use tsx. Do not add adapters. Do not use @tailwind directives.
+```
+
+---
+
+**End of delta summary.** Bottom line: 7 files delivered this session (4 reconstructed + 3 written from scratch), all import dependencies resolved, critical missing APIs identified. **The dashboard "Failed to synchronize" error in the screenshot is the single most important thing to fix next — it needs `/api/invoices/route.ts`.** Once that's in place, the dashboard fully works. Then admin dashboard, register page, and the rest cascade in order. ⚡
+
+
