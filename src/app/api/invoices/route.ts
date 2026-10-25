@@ -1,0 +1,133 @@
+// src/app/api/invoices/route.ts
+
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { FeeCategory, InvoiceStatus } from '@prisma/client';
+
+// Official UNIZIK Fee Schedule (Server-Enforced to prevent client-side price tampering)
+const OFFICIAL_FEE_SCHEDULE: Record<FeeCategory, number> = {
+  TUITION: 85500.00,
+  ACCEPTANCE: 45000.00,
+  ICT_INFRASTRUCTURE: 15000.00,
+  LIBRARY: 5000.00,
+  EXAM_CLEARANCE: 10000.00,
+};
+
+// GET: Fetch all invoices for a specific student UUID
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const studentId = searchParams.get('studentId');
+    const invoiceId = searchParams.get('invoiceId');
+    
+    if (invoiceId) {
+        const invoice = await prisma.feeInvoice.findUnique({ where: { id: invoiceId } });
+        return NextResponse.json({ success: true, invoice });
+    }
+    if (!studentId) {
+      return NextResponse.json({ success: false, error: "Student UUID is required." }, { status: 400 });
+    }
+
+    const invoices = await prisma.feeInvoice.findMany({
+      where: { studentId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        transactions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1, // Include the most recent transaction attempt for status indicator
+          // --- START FRAGMENT: CRITICAL NESTED JOIN ---
+          // Why: Forces Prisma to attach the Appeal object so the Student UI can evaluate PENDING/REJECTED states
+          include: {
+            appeal: true,
+          },
+          // --- END FRAGMENT ---
+        }
+      }
+    });
+
+    return NextResponse.json({ success: true, invoices }, { status: 200 });
+  } catch (error: any) {
+    console.error("[FETCH INVOICES ERROR]:", error.message);
+    return NextResponse.json({ success: false, error: "Failed to load student ledger." }, { status: 500 });
+  }
+}
+
+// POST: Generate a new tamper-proof invoice with Zero-Trust state checking
+export async function POST(req: Request) {
+  try {
+    const { studentId, category, session } = await req.json();
+
+    if (!studentId || !category || !session) {
+      return NextResponse.json({ success: false, error: "Student ID, Fee Category, and Session are required." }, { status: 400 });
+    }
+
+    if (!(category in OFFICIAL_FEE_SCHEDULE)) {
+      return NextResponse.json({ success: false, error: "Invalid university fee category selected." }, { status: 400 });
+    }
+
+    const amount = OFFICIAL_FEE_SCHEDULE[category as FeeCategory];
+
+    // CRITICAL FIX: Check if an invoice ALREADY exists in ANY state (PAID, PENDING, or BLOCKED)
+    const existingInvoice = await prisma.feeInvoice.findFirst({
+      where: {
+        studentId,
+        category: category as FeeCategory,
+        session,
+        status: {
+          in: [InvoiceStatus.PAID, InvoiceStatus.PENDING, InvoiceStatus.BLOCKED]
+        }
+      },
+    });
+
+    if (existingInvoice) {
+      // 1. If already PAID: Block new generation
+      if (existingInvoice.status === InvoiceStatus.PAID) {
+        return NextResponse.json({
+          success: false,
+          error: "This fee category has already been paid and cleared for the selected academic session.",
+          isCleared: true,
+        }, { status: 400 });
+      }
+
+      // 2. If under SECURITY HOLD (BLOCKED): Forbid generation! Force them to appeal!
+      if (existingInvoice.status === InvoiceStatus.BLOCKED) {
+        return NextResponse.json({
+          success: false,
+          error: "This fee obligation is currently suspended under a Bursary Security Hold. You must submit an administrative verification appeal before a new transaction can be initiated.",
+          isBlocked: true,
+        }, { status: 403 });
+      }
+
+      // 3. If PENDING: Return the existing pending invoice instead of creating a duplicate
+      if (existingInvoice.status === InvoiceStatus.PENDING) {
+        return NextResponse.json({
+          success: true,
+          message: "Existing pending invoice retrieved.",
+          invoice: existingInvoice,
+          isExisting: true,
+        }, { status: 200 });
+      }
+    }
+
+    // Create new invoice in SQLite ledger ONLY if no obligation exists for this session
+    const newInvoice = await prisma.feeInvoice.create({
+      data: {
+        studentId,
+        category: category as FeeCategory,
+        amount,
+        session,
+        status: InvoiceStatus.PENDING,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "New invoice generated successfully.",
+      invoice: newInvoice,
+      isExisting: false,
+    }, { status: 201 });
+  } catch (error: any) {
+    console.error("[CREATE INVOICE ERROR]:", error.message);
+    return NextResponse.json({ success: false, error: "Failed to generate billing invoice." }, { status: 500 });
+  }
+}

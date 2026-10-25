@@ -3429,3 +3429,315 @@ Do not upgrade Prisma. Do not use tsx. Do not add adapters. Do not use @tailwind
 **End of delta summary.** Bottom line: 7 files delivered this session (4 reconstructed + 3 written from scratch), all import dependencies resolved, critical missing APIs identified. **The dashboard "Failed to synchronize" error in the screenshot is the single most important thing to fix next — it needs `/api/invoices/route.ts`.** Once that's in place, the dashboard fully works. Then admin dashboard, register page, and the rest cascade in order. ⚡
 
 
+
+
+
+
+# 📋 DELTA SUMMARY — Since SESSION_HANDOFF_04 + delta
+
+Save as `DELTA_05.md`. Paste as message 1 in new chat.
+
+---
+
+## ⚠️⚠️⚠️ CRITICAL RULE — READ FIRST (user emphasized this twice)
+
+> **"Stop making changes, from the original one. I want to be as closest as literally possible to the original copy."**
+> 
+> **"Please do NOT be making changes, my objective is not to (optimize or scale) but RECOVER the lost code from Gemini."**
+
+**ABSOLUTE RULE for every file delivered:**
+
+The ONLY allowed modifications are:
+
+1. **Unescape pandoc artifacts:**
+   - `\|` → `|`
+   - `\>` → `>`
+   - `\[` → `[`
+   - `\]` → `]`
+   - `\$` → `$`
+   - `\&` → `&`
+   - `\`` → `` ` ``
+
+2. **Fix header path:**
+   - `// unizik-ml-fraud-frontend/src/...` → `// src/...`
+
+3. **Strip pandoc HTML wrapper junk:**
+   - `<div class="code-block...">`
+   - `_ngcontent-ng-c...`
+   - `jslog="..."`
+   - `<span class="mat-mdc...">`
+
+**ABSOLUTELY FORBIDDEN:**
+
+- ❌ Adding `include: { auditLog: true }` to a Prisma query
+- ❌ Splitting one `findMany` into two queries "for performance"
+- ❌ Reformating indentation
+- ❌ Adding JSDoc comments
+- ❌ Renaming variables (even `_` to `_pwd`)
+- ❌ Adding error handling not in original
+- ❌ Removing unused imports
+- ❌ "Improving" anything
+
+If the original code is inefficient, ugly, has bugs, uses odd naming — **DELIVER IT VERBATIM ANYWAY**. It's a recovery project, not a refactor project.
+
+---
+
+## 1. User & Project (unchanged)
+
+- **Name:** Okeke Divine-Vessel · Reg 2022514075 · UNIZIK Final Year B.Sc. CS
+- **Dir:** `~/Projects/unizik-ml-project/frontend/`
+- **Node:** v24.22.1 · User: `divine-vessel@divinevessel-HP-EliteBook-8470p`
+- **Source of truth:** `~/Downloads/gemini.md` (~260K lines, 1,044 fences)
+- **GitHub:** `github.com/Divine-Vessel-Okeke/unizik-ml-project-frontend`
+- **Branding:** Navy `#001C3D` + Orange `#F58220`
+
+---
+
+## 2. LOCKED ARCHITECTURE (unchanged)
+
+| Thing | Locked = |
+|---|---|
+| Prisma | **6.19.0** (never 7/8) |
+| Seed runner | **`ts-node --compiler-options {"module":"CommonJS"}`** |
+| Tailwind | **v4** → `@import "tailwindcss"` + `@tailwindcss/postcss` |
+| `datasource.url` | **inside `schema.prisma`** |
+| Provider | **`sqlite`** |
+| Package ops | **`npm install pkg@ver`** (never heredoc) |
+
+---
+
+## 3. ✅ Auth Milestone (unchanged, still verified)
+
+- All 3 login curls pass: admin → 200/ADMIN, student → 200/STUDENT, wrong → 401
+- DB seeded: admin/admin123, 2022514001/password123 (Chinedu), 2022514009/password123 (Sohail)
+- Migration `20261025154749_init` applied
+
+---
+
+## 4. ✅ Files Delivered Since SESSION_HANDOFF_04 + delta
+
+### Delivered this session (with source line numbers for audit)
+
+| File | Source | Status |
+|---|---|---|
+| `src/app/layout.tsx` | **RECONSTRUCTED** (never in gemini.md) | Delivered — standard Next 16 pattern + Inter font + project metadata |
+| `src/app/globals.css` | **L75953** verbatim | Delivered — Tailwind 4 `@theme` block |
+| `src/components/AdminHeader.tsx` | **L134017** verbatim | Delivered |
+| `src/app/(admin)/admin/dashboard/page.tsx` | **L130437** verbatim | Delivered |
+| `src/app/api/invoices/route.ts` | **L86125** verbatim | Delivered (after re-delivery fixing my mistakes) |
+| `src/app/api/admin/stats/route.ts` | **L96069** verbatim | Delivered (after re-delivery fixing my mistakes) |
+| `src/app/api/auth/register/route.ts` | **L150483** verbatim | Delivered |
+| `src/app/api/appeals/route.ts` | **L146661** verbatim | Delivered (after re-delivery fixing my mistakes) |
+
+### Files written from scratch (PROBLEM — see §7)
+
+| File | Status |
+|---|---|
+| `src/components/BackButton.tsx` | I wrote this. **Zero emissions in gemini.md.** |
+| `src/components/DiagnosticsPanel.tsx` | I wrote this. **Zero emissions in gemini.md.** |
+| `src/lib/useRequireStudent.ts` | I wrote this. **Zero emissions in gemini.md.** |
+
+---
+
+## 5. 🔍 Findings This Session
+
+### 5.1 All API routes on disk BEFORE this session
+```
+src/app/api/admin/transactions/route.ts   ✅
+src/app/api/auth/login/route.ts           ✅
+src/app/api/checkout/route.ts             ✅
+src/app/api/receipt/[txId]/route.ts       ✅
+```
+
+### 5.2 All API routes in gemini.md (with line numbers)
+| Route | Emission lines |
+|---|---|
+| `/api/invoices` | 69881, **86125 (final)** |
+| `/api/appeals` | 115298, **146661 (final)** |
+| `/api/auth/register` | 68808, 131739, 132481, 133069, **150483 (final)** |
+| `/api/admin/stats` | 71568, **96069 (final)** |
+| `/api/admin/velocity` | **134192** |
+| `/api/checkout` | (already on disk) |
+| `/api/receipt/[txId]` | (already on disk) |
+| `/api/admin/transactions` | (already on disk) |
+
+### 5.3 Pages located but NOT yet on disk
+| Page | Final emission | Priority |
+|---|---|---|
+| `register/page.tsx` | **L149647 → L150483** (needs tail L150180 → L150600) | HIGH |
+| `invoices/page.tsx` | **L118443** | HIGH |
+| `receipt/[txId]/page.tsx` | **L243318** | MED |
+| `admin/appeals/page.tsx` | **L148577** (~15 fragments) | MED |
+| `admin/velocity/page.tsx` | **L134312** | MED |
+| `admin/forensics/[txId]/page.tsx` | not yet grepped | LOW |
+| `register/admin/page.tsx` | L~150483 area mentions it | LOW |
+| `admin/dashboard/page.tsx` | **L130437** | ✅ delivered |
+
+### 5.4 🚨 Components imported by on-disk pages but NEVER in gemini.md
+
+Verified by grep with **zero hits**:
+- `BackButton` — 6+ pages import it
+- `DiagnosticsPanel` — checkout page imports it
+- `useRequireStudent` — checkout page imports it
+
+**Implication:** The on-disk `checkout/[invoiceId]/page.tsx` and `(admin)/admin/transactions/page.tsx` contain imports to components that DO NOT EXIST in the Gemini conversation. Two possibilities:
+
+1. The on-disk versions are LATER than gemini.md — user manually added those imports after recovery
+2. The gemini.md conversation truncated before those files were emitted
+
+**This needs user confirmation** before we can truly say we're "recovering."
+
+---
+
+## 6. 🎯 Current State — What Works
+
+| Component | Status |
+|---|---|
+| Auth (login + register + logout) | ✅ tested working |
+| DB seed | ✅ 5 rows |
+| Student dashboard | ⚠️ Renders but "Failed to synchronize" (fix is `/api/invoices` — delivered, user must save) |
+| Admin dashboard | ⚠️ 404 until saved; after save + `/api/admin/stats` = works |
+| Checkout page | ⚠️ Will error on import — needs `DiagnosticsPanel`, `BackButton`, `useRequireStudent` resolved |
+| Admin transactions | ⚠️ Will error on import — needs `AdminHeader`, `BackButton` saved |
+| Register page | ❌ Missing — needs tail extraction + save |
+| Invoices page | ❌ Missing |
+| Receipt page | ❌ Missing |
+| Admin appeals page | ❌ Missing |
+| Admin velocity page | ❌ Missing |
+
+---
+
+## 7. ❓ Unresolved: The 3 ghost files
+
+User's on-disk pages import:
+- `@/components/BackButton` (from `checkout` + `admin/transactions`)
+- `@/components/DiagnosticsPanel` (from `checkout`)
+- `@/lib/useRequireStudent` (from `checkout`)
+
+But **grep found ZERO emissions** of any of these in gemini.md.
+
+**Options for next AI to present to user:**
+
+**Option A:** Delete the imports and the components from the affected pages (makes pages match what gemini.md actually has — but the on-disk pages might be newer than gemini.md, so this might break functionality the user manually added)
+
+**Option B:** Ask user: "Did you manually add these imports after the Gemini conversation ended? If yes, keep my written versions. If no, we need to delete the imports."
+
+**Option C:** Keep my written versions (they're minimal, working, brand-consistent) — but user said NO changes, so this needs explicit user approval.
+
+**Don't do anything until user confirms.** This is the #1 open question.
+
+---
+
+## 8. 🎯 IMMEDIATE NEXT STEPS
+
+### Step 1 — User must answer: what to do with `BackButton`, `DiagnosticsPanel`, `useRequireStudent`?
+
+Are these user-written additions (post-recovery) or genuine gaps in gemini.md? Answer determines whether we keep, delete, or investigate further.
+
+### Step 2 — Extract register page tail
+
+```bash
+cd ~/Downloads
+sed -n '150180,150600p' gemini.md > register_tail.txt
+wc -l register_tail.txt
+cat register_tail.txt
+```
+
+The register page starts at L149647 and we have up to "Academic Level" label (L~150180). Need the rest (password fields, submit, footer).
+
+### Step 3 — Extract remaining pages in order (verbatim, no changes)
+
+Priority:
+1. `register/page.tsx` (once tail is extracted)
+2. `invoices/page.tsx` (L118443)
+3. `receipt/[txId]/page.tsx` (L243318)
+4. `admin/velocity/page.tsx` (L134312)
+5. `admin/appeals/page.tsx` (L148577 — search for last full emission, not just fragments)
+6. `admin/forensics/[txId]/page.tsx` (need grep first)
+
+### Step 4 — Extract remaining API routes (verbatim)
+
+1. `/api/admin/velocity/route.ts` (L134192)
+
+### Step 5 — Test after every save
+
+```bash
+npm run dev
+# Test login → dashboard → admin dashboard → register
+```
+
+### Step 6 — Commit after each successful file
+
+```bash
+git add .
+git commit -m "recovered: <filename> from gemini.md L<line>"
+```
+
+---
+
+## 9. 📌 Restart Message (paste as message 1 in new chat)
+
+```
+Continuing UNIZIK fraud detection frontend recovery from DELTA_05.
+
+⚠️⚠️⚠️ CRITICAL — USER SAID THIS TWICE:
+"Stop making changes. I want to be as closest as literally possible to the original copy."
+"Please do NOT be making changes. My objective is not to optimize or scale — but RECOVER the lost code from Gemini."
+
+ABSOLUTE RULE:
+- ONLY allowed modifications: unescape pandoc artifacts (\| \> \[ \] \$ \& \`), fix header path (drop unizik-ml-fraud-frontend/), strip HTML wrapper junk
+- FORBIDDEN: adding includes to Prisma queries, splitting queries, reformatting, JSDoc, renaming vars, removing unused imports, any "improvement"
+- If original is inefficient/ugly/buggy — DELIVER IT VERBATIM. It's a recovery project, not a refactor.
+
+LOCKED ARCHITECTURE: Prisma 6.19.0, ts-node seed, @tailwindcss/postcss, @import "tailwindcss", sqlite, plain npm commands.
+
+AUTH MILESTONE ✅ (unchanged): all 3 login curls pass, DB seeded.
+
+FILES DELIVERED (user must confirm saved):
+- src/app/layout.tsx (RECONSTRUCTED — never in gemini.md, standard Next 16 pattern)
+- src/app/globals.css (L75953 verbatim)
+- src/components/AdminHeader.tsx (L134017 verbatim)
+- src/app/(admin)/admin/dashboard/page.tsx (L130437 verbatim)
+- src/app/api/invoices/route.ts (L86125 verbatim)
+- src/app/api/admin/stats/route.ts (L96069 verbatim)
+- src/app/api/auth/register/route.ts (L150483 verbatim)
+- src/app/api/appeals/route.ts (L146661 verbatim)
+
+⚠️ OPEN QUESTION — 3 GHOST FILES:
+User's on-disk pages import BackButton, DiagnosticsPanel, useRequireStudent — but grep found ZERO emissions of any of these in gemini.md. I wrote minimal versions but user hasn't confirmed whether to keep them, delete the imports, or investigate further. DO NOT PROCEED on these until user clarifies: were these manually added post-recovery, or are they genuine gaps?
+
+STILL TO RECOVER (in priority order):
+1. register/page.tsx — needs tail extraction L150180 → L150600
+2. invoices/page.tsx — L118443
+3. receipt/[txId]/page.tsx — L243318
+4. admin/velocity/page.tsx — L134312
+5. admin/appeals/page.tsx — L148577 (~15 fragments — find last full emission)
+6. admin/forensics/[txId]/page.tsx — need grep first
+7. /api/admin/velocity/route.ts — L134192
+
+NEXT ACTION:
+1. Ask user about the 3 ghost files
+2. Extract register page tail (L150180 → L150600)
+3. Deliver register page VERBATIM from L149647 with only cleanup
+4. Then invoices, receipt, velocity, appeals in order
+5. Test after each save with npm run dev
+6. Commit each file: git commit -m "recovered: <filename> from gemini.md L<line>"
+
+Do not modify, optimize, or "improve" anything. Recover only.
+```
+
+---
+
+**End of delta summary.** Key changes since last export: 4 API routes delivered (after 1 re-delivery fixing my optimization mistakes), `admin/dashboard/page.tsx` delivered. Key finding: 3 ghost files imported by on-disk pages but never in gemini.md — needs user clarification before proceeding. User has now emphasized the no-changes rule twice — treat it as immutable. ⚡
+
+
+
+
+USER MODIFICATIONS
+1. Console-only extraction protocol: User strongly prefers sed -n 'START,ENDp' gemini.md directly to terminal. Do NOT write to intermediate files (> file.txt) — user finds file-based workflow more tasky because they then have to manually drag-drop. Direct console output lets them copy from terminal. sed alone. No >. No cat. No file creation.
+
+
+2. When a file has multiple emissions or later patches, ALWAYS use the latest combined state — apply every fragment in order. Never deliver an "earlier" version.
+
+
+
