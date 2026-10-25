@@ -1,0 +1,2453 @@
+# 📋 FULL CONTEXT HANDOFF — Copy this whole message to restart
+
+Save this as `CONTEXT_HANDOFF.md` on your machine. When you start the new chat, paste this as message 1.
+
+---
+
+## 1. The User & Project
+
+- **Name:** Okeke Divine-Vessel
+- **Reg No:** 2022514075
+- **Institution:** Nnamdi Azikiwe University (UNIZIK), Awka, Anambra State, Nigeria
+- **Level:** Final Year B.Sc. Computer Science
+- **Working directory:** `~/Projects/unizik-ml-project/frontend/`
+- **OS:** Fresh install (new OS, hence the recovery situation)
+
+### Approved Final Year Project Topic
+> **"Development of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification"**
+
+### Tech Stack (as built)
+- **Frontend:** Next.js 15 (App Router), TypeScript, Tailwind CSS, `lucide-react` icons
+- **Backend:** Next.js API routes (already recovered — done by user)
+- **Database:** Prisma + SQLite
+- **ML:** Python, `scikit-learn` `DecisionTreeClassifier` (backend, already recovered)
+- **Auth:** JWT session cookies + SHA-256 hardware fingerprint (`src/lib/fingerprint.ts`)
+- **Color palette:** UNIZIK Navy `#001C3D` + Amber/Orange `#F58220`
+- **Backup original path in Gemini convos:** `unizik-ml-fraud-frontend/` (old path, new is `frontend/`)
+
+---
+
+## 2. The Recovery Situation
+
+**What happened:** Original project was on a machine that got wiped (new OS install). GitHub repo also gone. User is rebuilding from scratch.
+
+**What survived:**
+1. **The live project directory** (`~/Projects/unizik-ml-project/frontend/`) — backend + config + lib files + Prisma schema all intact and working.
+2. **A saved HTML file** from Gemini's web UI (`gemini.md` after pandoc conversion, ~260K+ lines, 1,044 code fences in `~/Downloads/`) — **this is the source of truth** for the frontend code.
+
+**Important:** The Gemini HTML save DOES contain the full frontend code emissions. User confirmed this. Do not argue otherwise.
+
+**Backend is DONE** — user already recovered it. Only the **frontend files** need reconstruction.
+
+---
+
+## 3. Live File Tree (from `find` output)
+
+```
+~/Projects/unizik-ml-project/frontend/
+├── .env, .env.example
+├── .git/                          ← has commits, was pushed once
+├── AGENTS.md
+├── eslint.config.mjs
+├── next.config.ts
+├── next-env.d.ts
+├── package.json
+├── package-lock.json
+├── prisma/schema.prisma
+├── README.md
+├── tsconfig.json
+└── src/
+    ├── app/
+    │   ├── layout.tsx                                  ← TODO
+    │   ├── globals.css                                 ← TODO
+    │   ├── page.tsx                                    ← TODO (root landing)
+    │   ├── (admin)/admin/transactions/page.tsx         ← TODO
+    │   ├── (auth)/login/page.tsx                       ← ✅ DONE (this session)
+    │   ├── (student)/                                  ← EMPTY DIR
+    │   ├── api/
+    │   │   ├── admin/transactions/route.ts             ← ✅ backend done
+    │   │   ├── checkout/route.ts                       ← ✅ backend done
+    │   │   └── receipt/[txId]/route.ts                 ← ✅ backend done
+    │   ├── checkout/[invoiceId]/page.tsx               ← TODO
+    │   └── dashboard/page.tsx                          ← TODO
+    ├── components/
+    │   └── StudentHeader.tsx                           ← TODO
+    ├── frontend-backup/                                ← old copies, keep as ref
+    │   ├── A_Znotes.txt
+    │   ├── fraud-engine.ts
+    │   ├── page(1).tsx
+    │   ├── route.ts
+    │   └── schema.prisma + schema(1)(2)(3).prisma
+    └── lib/
+        ├── fingerprint.ts                              ← ✅ recovered
+        └── fraud-engine.ts                             ← ✅ recovered
+```
+
+---
+
+## 4. Files Still To Reconstruct (frontend only — 8 files)
+
+**Priority order** (matches user's linear navigation flow):
+
+| # | File | Status | Notes |
+|---|------|--------|-------|
+| 1 | `src/app/page.tsx` | ⏳ NEXT | Root landing / redirector |
+| 2 | `src/app/layout.tsx` | pending | Root layout |
+| 3 | `src/app/globals.css` | pending | Tailwind + custom tokens |
+| 4 | `src/components/StudentHeader.tsx` | pending | Shared student nav |
+| 5 | `src/app/(auth)/login/page.tsx` | ✅ **DONE** | Reconstructed this session — full code below |
+| 6 | `src/app/dashboard/page.tsx` | pending | Student dashboard |
+| 7 | `src/app/checkout/[invoiceId]/page.tsx` | pending | Payment page |
+| 8 | `src/app/(admin)/admin/transactions/page.tsx` | pending | Bursary admin |
+
+Also worth checking if referenced by login/dashboard:
+- `src/app/(student)/dashboard/page.tsx` — Gemini referenced this path too; the real one is `app/dashboard/page.tsx`
+- `src/app/register/page.tsx` — linked from login ("Register New Undergraduate Profile")
+- `src/app/admin/dashboard/page.tsx` — admin redirect target
+- `src/app/api/auth/login/route.ts` — login endpoint (may be missing)
+
+---
+
+## 5. The Workflow (proven, works)
+
+For each file:
+```bash
+# 1. Extract timeline from gemini.md
+cd ~/Downloads
+grep -n -B10 -A30 'PATH/PATTERN' gemini.md > FILE_timeline.txt
+wc -lc FILE_timeline.txt
+
+# 2. Send user pastes file → reads all emissions in order
+# 3. AI identifies: latest complete emission + all subsequent patches
+# 4. AI outputs the final merged file
+# 5. User pastes into editor, moves to next file
+```
+
+**User's mental model (correct):** "gemini.md is a linear timeline. Final state = last complete emission + every patch after it, applied in order."
+
+**User also already has `extract.py`** (created this session) — a Python script that splits every fenced code block in `gemini.md` into `extracted/NNNN__FILENAME.ext`. Index at `extract_index.txt`. **But user is not using it** — prefers grep + manual per-file review.
+
+---
+
+## 6. Environment Notes
+
+- **`grep` was temporarily "not found"** — resolved (was likely a transient PATH issue or user moved shells). It works now.
+- **Bracketed paste (`^[[200~`)** — user disabled via `bind 'set enable-bracketed-paste off'` in `.bashrc`.
+- **Pandoc used to convert HTML → gemini.md** (1,044 code fences, 260K+ lines).
+- **`gemini.md` lives at:** `~/Downloads/gemini.md`
+
+---
+
+## 7. Key Technical Contracts (from what's been seen)
+
+### Login API (`POST /api/auth/login`)
+**Request body:**
+```json
+{ "matricNumber": "string", "password": "string", "deviceId": "string", "isAdmin": boolean }
+```
+**Response:**
+```json
+{ "success": true, "user": { ... }, "role": "STUDENT" | "BURSARY_DIRECTOR" | "ADMIN" }
+```
+**Admin DB role is `BURSURY_DIRECTOR`** (from `prisma/seed.ts`) — NOT `"ADMIN"`. Login must check both.
+
+### Prisma schema mentions (found in grep, line numbers in gemini.md)
+- Multiple schema updates at lines: 61210, 61748, 62319, 68167, 101377, 106700, 107696, 112951, 114932, 115936, 125381, 131198, 135034, 137280, 142770, 149104, 165837, 235419
+- Latest (line ~248850 reference): includes `Admin`, `SessionCookie`, `Appeal`, `Student`, `Invoice`, `Transaction`
+- Admin seed user: `admin` / `admin123`, role `BURSARY_DIRECTOR`
+
+---
+
+## 8. ✅ COMPLETED THIS SESSION: `src/app/(auth)/login/page.tsx`
+
+Full code was output in the prior message. **Summary of what it is:**
+
+- Client component (`"use client"`)
+- Imports: `React`, `useRouter`, `lucide-react` icons (`Shield, Lock, User, ArrowRight, AlertCircle, Cpu`), `generateDeviceFingerprint` from `@/lib/fingerprint`
+- State: `matricNumber, password, isAdmin, deviceId, loading, error`
+- On mount: harvests device fingerprint
+- On submit: POSTs to `/api/auth/login`, saves `userProfile` (with explicit `role` embedded) to `localStorage.unizik_user`, redirects to `/admin/dashboard` if role is `ADMIN` **or** `BURSARY_DIRECTOR`, else `/dashboard`
+- UI: Navy `#001C3D` + Orange `#F58220`, UNIZIK crest `/unizik.png` (w-24 h-24 sm:w-28 sm:h-28), dual-mode pill switcher (Undergraduate Portal / Admin Command), live telemetry sensor card showing `deviceId`, register link to `/register` visible when `!isAdmin`
+- Footer: capstone project title + copyright
+
+**Verification still pending before trusting this file:**
+```bash
+ls -l public/unizik.png                          # must exist
+grep -n "export" src/lib/fingerprint.ts          # must export generateDeviceFingerprint
+ls src/app/api/auth/login/route.ts               # if missing → 404 on login
+```
+
+---
+
+## 9. Immediate Next Steps
+
+1. **User verifies** the 3 checks above (logo, fingerprint export, login API existence).
+2. **Next file to reconstruct:** `src/app/page.tsx` (root landing).
+3. **Extraction command to run:**
+   ```bash
+   cd ~/Downloads
+   grep -n -B10 -A40 'app/page\.tsx\|src/app/page\.tsx' gemini.md | head -300 > root_page_timeline.txt
+   wc -lc root_page_timeline.txt
+   head -200 root_page_timeline.txt
+   ```
+4. Send output → AI merges → move to `layout.tsx`.
+
+**Expected pace:** ~10–15 min per file once in rhythm. 7 files remaining → ~1.5 hours.
+
+---
+
+## 10. Important Behavioral Notes for the AI (in new conversation)
+
+**Do:**
+- Assume `gemini.md` **contains the code**. Do not suggest otherwise.
+- Trust the user's memory of what the file contains — they've verified it.
+- Output **complete, ready-to-paste files**. No fragments unless explicitly asked.
+- Preserve exact styling (colors, Tailwind classes) from prior emissions.
+- When in doubt, ask for the specific `grep` output of that file's timeline.
+- Keep the project's dual-path convention: `app/(auth)/login/page.tsx` in filesystem, `app/login/page.tsx` in old Gemini references.
+
+**Don't:**
+- Suggest rebuilding from scratch if gemini.md has the file.
+- Ask for the 21.9 MB HTML directly — use the pandoc-converted `gemini.md`.
+- Paste giant terminal dumps back at the user — summarize instead.
+- Assume removed files are gone — always check the disk first.
+
+---
+
+## 11. Study Material Context (bonus — not needed for code work)
+
+`gemini.md` also contains extensive exam prep Gemini authored for these courses (saved for study, not recovery):
+- **CSC461** OOP · **CSC411** Compiler Construction · **CSC401** Data Comms/Networks · **CSC421** Surveying Programming Languages · **CSC431** Algorithms & Complexity · **CSC441** Research Methods · **CSC462** Computer Architecture · **CSC471** Web Design · **CSC452** Expert Systems · **CSC492** Remote Sensing & GIS · **MAT343** Discrete Maths
+
+Plus:
+- AP 7th edition reference examples
+- Past questions for CSC401 (2023/24 + 2024/25), CSC441, MAT343
+- Chapter 1 supervisor-mindset breakdown
+- AI-detection bypass writing strategy
+
+---
+
+**End of handoff. Paste this entire message as the first message in your new chat and continue with `src/app/page.tsx`.** 🚀
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Recover deleted project.txt
+Recover deleted project
+Legal doc review protocol
+Expense total confirmed
+BoostCollective banned countries
+EEC307 questions coverage check
+UK keyboard layout Mint
+Empty message
+Journal Found on Site
+Prayer verse verification
+EEDC payment verification
+Exam no CA count
+UNIZIK result computation ethics
+People with criminal records
+Incomplete sentence
+Google recovery phone lie sin
+Algora account info rules
+Extract select options
+Sermon Summary Temptation
+Job hunt
+Searching heart leads to repentance
+Multiple symptoms medical advice
+Freelance plan review
+Verify total
+Remote dev salary breakdown
+[02] Sovereign Intelligence Acknowledged
+Simple job param extractor
+Job classification rules
+Verify request clarification
+Reddit marketing cold email advice
+Convert EDT to GMT+1
+Now What Guidance
+Skiyen redirect fix
+Unizik project binding costs
+Moses and Jesus day
+Spiritual Blindness Warning
+Global remote backend job search
+Count no CA students
+[03] Sovereign Intelligence Acknowledged
+Discrepancy Check
+Loose charging port fix
+Math verification
+Grey label background reason
+Anger to Action
+Unizik CDS 400备考攻略
+待业谈判筹码分析
+Resume Evaluation
+Resume text extraction
+Sovereign Intelligence Acknowledged
+Complex MCQ Trio
+2 StatArb Code Analysis
+3 StatArb Code Analysis
+2 Sam 23 Summary
+StatArb Code Analysis
+ODE Exam Shortcuts
+First Principles Thinking
+KJV Proverbs Philippians
+Nuclear Overheat No Shutdown
+Nigeria phone tracking guide
+???? Demonic casting to Abyss
+Economic Moat
+Bible Sister-Wife Pattern
+Dental Floss Guide Translation
+Black hole tooth pus drainage emergency
+Iran toll settled in yuan
+圣经视角论盗版
+Prayer request handwritten
+Awaiting Match Narration
+Mother in law niece
+Creation steps Genesis
+Trapped in Container
+Area Denial vs Suppression
+EEC 208 Marking Scheme
+gang stalking survival advice
+Proverbs 6:16
+Project Summary and Assessment
+Free VPN Android No Bloat
+The Ancient Sky
+Abstract written last
+Train cybersecurity mini model
+Group Call Leave vs Remove
+Message Comparison
+Differences btw messa he 1 and 2
+App first launch date
+Hypersonic Missile Defense Strategy
+Boredom Busters
+Jeremiah 33 Summary
+Nonmainstream brutal punishment
+Android app permission guide
+y'=3xy
+BitLocker recovery key generation
+Load multiple files LosslessCut
+Fraud Detection Engine Review
+Clarify request
+Free real-time TTS Android
+Period
+Test response
+CamScanner to PDF guide
+Plot twist definition
+Suspicious Nigerian car plate covered
+Derision in Psalm 2
+WhatsApp view once send
+Recover deleted project
+
+The user wants to reconstruct seed.ts and schema.prisma from gemini.md to be exact — not use my generated versions. That's fair, especially for the schema (which they already have on disk — wait, they DO have schema.prisma on disk since grep found it!). Let me re-read.
+
+From the earlier output:
+text
+
+grep -nE 'model (Admin|Student)|loginDeviceId|username|fullName' prisma/schema.prisma | head -20
+40:model Student {
+49:  loginDeviceId  String?         @map("login_device_id")
+62:model Admin {
+64:  username       String          @unique
+66:  fullName       String          @map("full_name")
+
+So prisma/schema.prisma exists on disk and matches the content they pasted. So actually the schema is done — they already pasted it as an attachment (unizik-ml-fraud-frontendprismaschema.prisma.txt). The schema is already complete.
+
+But the user says "for seed.ts and schema prisma i want us to use the find and reconstruct from germini.md as usually to ensure it is exact". So they want to double-check both, plus get seed.ts (which is definitely missing).
+
+Wait — schema is already on disk. Let me check if it's the latest version. There were multiple schema mentions in the earlier scan (L61210, L61748, L62319, L68167, etc.). The latest in the file was at L~248850. But the user pasted a schema that looks complete and matches their disk file. So schema might already be correct.
+
+But to be safe, we should:
+
+    Verify the on-disk schema matches the LAST schema emission in gemini.md
+
+    Get seed.ts from gemini.md (it's missing on disk)
+
+Let me look at where seed.ts would appear. In the earlier grep results:
+
+    L68526: const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+
+    L68527: const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+
+These are likely inside a seed.ts emission. And there were mentions around L68526, L89061-89063, L106536-106538, L132693-132695, L149473-149475 — multiple seed emissions.
+
+Also prisma/seed.ts was referenced. Let me search for it.
+
+The user is right to want the exact source. Let me help them:
+
+    Find all seed.ts emissions in gemini.md
+
+    Find all schema.prisma emissions in gemini.md
+
+    Extract the LAST (latest) version of each
+
+    Compare to what's on disk (for schema)
+
+Commands to run:
+bash
+
+# seed.ts candidates
+grep -nE 'prisma/seed\.ts|seed\.ts.*PrismaClient|defaultPasswordHash' gemini.md | grep -vE 'You said' | head -40
+
+For schema, they already have the latest one at various lines. Let me find where the LAST schema is:
+bash
+
+grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma' gemini.md
+
+From earlier scan, this appears at:
+
+    L61210
+
+    L61748
+
+    L62319
+
+    L68167
+
+    L101377
+
+    L106700
+
+    L107696
+
+    L112951
+
+    L114932
+
+    L115936
+
+    L125381
+
+    L131198
+
+    L135034
+
+    L137280
+
+    L142770
+
+    L149104
+
+    L165837
+
+    L235419
+
+And schema was referenced at L248850.
+
+So the LAST schema emission is either at L235419 or L248850 (or somewhere after L248850). Let me check.
+
+Wait, actually the user already has schema on disk and it looks complete (they pasted it, it has Student, Admin, FeeInvoice, Transaction, FraudAuditLog, Appeal — all models). This could already be the latest.
+
+Let me focus:
+
+    schema.prisma — likely already correct on disk, but verify against latest gemini.md emission
+
+    seed.ts — definitely missing, needs extraction from gemini.md
+
+Let me give them commands:
+
+For seed.ts:
+bash
+
+cd ~/Downloads
+grep -nE 'prisma/seed\.ts' gemini.md | grep -vE 'You said'
+
+For schema (find last emission):
+bash
+
+cd ~/Downloads
+grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma' gemini.md | tail -5
+
+Also need to check if schema was emitted with // prisma/schema.prisma or other headers.
+
+Let me also add: check if there are drafts/patch sections.
+
+Also important — the user said "prisma schema" needs to be reconstructed. But it's already on disk! And matches the attachment. So maybe they just want verification that what's on disk is the latest?
+
+Actually, re-reading their message: "for seed.ts and schema prisma i want us to use the find and reconstruct from germini.md as usually to ensure it is exact"
+
+I think they want:
+
+    Confirm the on-disk schema is the exact latest version from gemini.md
+
+    Reconstruct seed.ts from gemini.md (missing on disk)
+
+Let me structure this clearly.
+
+For seed.ts extraction, the key signals:
+
+    PrismaClient
+
+    main() / async function main
+
+    upsert (for idempotency)
+
+    prisma.$disconnect()
+
+    Both bcrypt hashes with 'password123' and 'admin123'
+
+From the grep we saw:
+text
+
+L68526: const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+L68527: const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+
+This is likely a seed.ts. Let me have them search precisely.
+
+Also I should note that seed.ts might be emitted as prisma/seed.ts in a code block with a // prisma/seed.ts header, so:
+bash
+
+grep -nE '^\s*//\s*prisma/seed\.ts|^\s*//\s*.*seed\.ts' gemini.md
+
+Let me structure the response:
+
+    First — confirm schema is already good (they already pasted it, matches disk). Just verify no newer emission.
+
+    Then — extract seed.ts from gemini.md with grep.
+
+    Then — after we have the real seed, compare it to my generated one (to check if there's anything I missed, like additional test data or special fields).
+
+Actually let me be efficient — give them the exact commands and explain what we're looking for:
+
+Commands:
+bash
+
+cd ~/Downloads
+
+# 1. Find all seed.ts emissions
+grep -nE 'prisma/seed\.ts|seed\.ts.*PrismaClient|PrismaClient.*seed' gemini.md | grep -vE 'You said' | head -30
+
+# 2. Find all schema.prisma emissions
+grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma|^\s*//\s*prisma/schema\.prisma' gemini.md | tail -10
+
+# 3. Find any schema.prisma without path prefix (bare header)
+grep -nE 'generator client \{|datasource db \{' gemini.md | head -20
+
+For seed.ts, we want to look for these anchors:
+
+    PrismaClient instantiation
+
+    hashSync('password123' or hashSync('admin123'
+
+    upsert({ for students/admins
+
+Let me also note: the user asked to make sure the schema on disk matches the latest. We could diff. Give them a diff command.
+bash
+
+cd ~/Downloads
+# Extract latest schema emission and diff against on-disk
+# (need to know line range first)
+
+OK let me write a clean, focused response. Focus on:
+
+    Schema: verify (likely already correct) — quick diff
+
+    Seed.ts: extract from gemini.md — the real task
+
+Let me plan the commands precisely.
+
+For seed.ts — the signals from earlier scan:
+
+    L68526, L68527 — defaultPasswordHash and adminPasswordHash (these are in seed.ts context)
+
+    L89061-89063 — same pattern
+
+    L106536-106538 — same pattern
+
+    L132693-132695 — same pattern (with surrounding context)
+
+    L149473-149475 — same pattern
+
+So seed.ts was emitted multiple times. The last emission is around L149473-149475 (or later).
+
+Let me check for a prisma/seed.ts header specifically:
+
+Actually, seed.ts is a file that runs with npx prisma db seed, so its typical header would be // prisma/seed.ts or **FILE:** prisma/seed.ts or similar.
+
+The user should also check where $disconnect appears — that's a seed.ts hallmark:
+bash
+
+grep -nE '\$disconnect|async function main|main\(\).*catch' gemini.md | grep -v 'You said' | head -20
+
+OK let me write the response. Structure:
+
+    Confirm schema is likely already correct (they have it on disk and pasted it)
+
+    Commands to find & extract seed.ts from gemini.md
+
+    Commands to verify schema on disk matches latest in gemini.md
+
+    What we'll do next
+
+Keep it concise. Give exact commands. Ask for outputs.
+
+Also — I should mention that the schema already on disk is probably fine because:
+
+    It matches the exact schema they pasted
+
+    It contains all the models mentioned in the project scope (Student, Admin, Invoice, Transaction, AuditLog, Appeal)
+
+    It matches the fields login route uses (matricNumber, password, firstName, lastName, department, level, loginDeviceId)
+
+So we just need to verify no NEWER schema was emitted after whatever version is on disk.
+
+Let me finalize.
+Good call. Extract, don't generate. Let's mine both from gemini.md.
+
+You're right — my generated seed.ts was a "fill the gaps" guess. The real one likely has extra seed data (more test students, maybe sample invoices/transactions) that we don't want to lose.
+
+The schema is already on disk and matches what you pasted — that's almost certainly the latest (all 6 models + enums present). But we'll verify with one diff.
+
+The seed.ts is missing and needs proper extraction — it was emitted at least 5 times during the conversation (see L68526, L89061, L106536, L132693, L149473 from the earlier scan). Let's find the last complete version.
+Step 1 — Locate every seed.ts emission
+
+Run this — the $disconnect + async function main combo is a unique seed.ts fingerprint (nothing else uses it):
+bash
+
+cd ~/Downloads
+
+echo "=== seed.ts fingerprints ==="
+grep -nE '\$disconnect|async function main\(\)|main\(\).*\.catch|hashSync\(.password123|hashSync\(.admin123' gemini.md \
+  | grep -vE 'You said|user-query|placeholder'
+
+echo ""
+echo "=== explicit prisma/seed.ts path headers ==="
+grep -nE '^\s*//\s*prisma/seed\.ts|^\s*//\s*.*seed\.ts$|\*\*FILE:\*\*\s*.*seed\.ts' gemini.md \
+  | grep -vE 'You said|user-query'
+
+echo ""
+echo "=== PrismaClient seed context (upsert blocks) ==="
+grep -nE 'prisma\.(student|admin)\.upsert|await prisma\.\$disconnect' gemini.md \
+  | grep -vE 'You said|user-query'
+
+Paste the 3 outputs. That gives us:
+
+    Which line the last main().catch is at (end of seed file)
+
+    Where the // prisma/seed.ts header starts (beginning of seed file)
+
+    Confirmation that upsert blocks exist (real seed, not stub)
+
+Step 2 — Locate every schema.prisma emission + verify on-disk version is latest
+bash
+
+cd ~/Downloads
+
+echo "=== All schema.prisma emissions ==="
+grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma|^\s*//\s*prisma/schema\.prisma' gemini.md \
+  | grep -vE 'You said|user-query'
+
+echo ""
+echo "=== Bare generator/datasource headers (schema without path comment) ==="
+grep -nE '^generator client \{|^datasource db \{|generator client \{' gemini.md \
+  | grep -vE 'You said|user-query'
+
+Paste both. Compare the last line number here with the last schema.prisma file path — the highest one is what should be on disk.
+Step 3 — After we know the ranges, extract + diff
+
+Once we have the ranges (say seed.ts runs L149470 → L149700, schema runs L235400 → L235600):
+bash
+
+cd ~/Downloads
+
+# Extract from gemini.md (adjust ranges once confirmed)
+sed -n '149400,149750p' gemini.md > seed_raw.txt
+sed -n '235380,235650p' gemini.md > schema_raw.txt
+
+wc -l seed_raw.txt schema_raw.txt
+head -60 seed_raw.txt
+head -40 schema_raw.txt
+
+Then the critical check:
+bash
+
+# Strip HTML/div noise from schema_raw.txt, then diff against on-disk
+# (do this after we clean it up in chat)
+
+# Once we have a clean schema_prisma_from_gemini.txt:
+diff -u prisma/schema.prisma ~/Downloads/schema_clean.prisma
+
+    No diff → on-disk schema is correct, skip it entirely
+
+    Diff → I'll tell you which version wins and why
+
+Same for seed.ts:
+bash
+
+# After extraction and cleanup
+diff -u /path/to/my_generated_seed.ts ~/Downloads/seed_clean.ts
+# I'll show you what I got wrong / missed
+
+Why the schema is probably already correct
+
+Your on-disk schema (which you pasted) has all 6 models + 5 enums:
+text
+
+✅ Student         (matricNumber, email, password, firstName, lastName, department, level, loginDeviceId)
+✅ Admin           (username, password, fullName, role)
+✅ FeeInvoice      (category, amount, session, status)
+✅ Transaction     (deviceId, ipAddress, asnNumber, pageDwellTime, isOffPeak, hardwareMismatch — ML features)
+✅ FraudAuditLog   (prediction, confidence, verdict, explanation)
+✅ Appeal          (reason, status, adminNotes)
+✅ InvoiceStatus, TransactionStatus, FeeCategory, AppealStatus enums
+
+Every field the login route + future dashboard/checkout/admin files reference is here. So unless gemini.md has a newer emission with additional fields (e.g., passwordResetToken, lastLoginAt, audit columns), this is the one.
+
+Verify with the diff in Step 3 — if it matches, we don't touch it.
+Why seed.ts is definitely missing and needs the real one
+
+Signals from earlier scan showed defaultPasswordHash and adminPasswordHash repeated 5 times across the file — meaning the seed was emitted, patched, and re-emitted as the schema evolved. The latest version will have:
+
+    All fields for the latest schema (level, department, loginDeviceId, role)
+
+    Bcrypt hashes (not SHA-256 — that bug was fixed)
+
+    Sample FeeInvoice / Transaction rows (for the dashboard/checkout to test against) ← this is the part my generated version omitted
+
+That's why we want the real one.
+What to run right now
+
+Copy-paste the 3 commands from Step 1 and the 2 from Step 2. Total output should be 30–80 lines. Paste all 5 outputs back.
+
+From there:
+
+    If schema diff is empty → schema is done, we keep on-disk version, done.
+
+    We extract the real seed.ts, clean it, you drop it in, re-run npx tsx prisma/seed.ts, login works.
+
+That's the whole ask. ⚡
+Length limit reached. Please start a new chat.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ivine-vessel@divinevessel-HP-EliteBook-8470p~.txt
+divine-vessel@divinevessel-HP-EliteBook-8470p:~/Downloads$ cd ~/Downloads
+
+echo "=== seed.ts fingerprints ==="
+grep -nE '\$disconnect|async function main\(\)|main\(\).*\.catch|hashSync\(.password123|hashSync\(.admin123' gemini.md \
+  | grep -vE 'You said|user-query|placeholder'
+
+echo ""
+echo "=== explicit prisma/seed.ts path headers ==="
+grep -nE '^\s*//\s*prisma/seed\.ts|^\s*//\s*.*seed\.ts$|\*\*FILE:\*\*\s*.*seed\.ts' gemini.md \
+  | grep -vE 'You said|user-query'
+
+echo ""
+echo "=== PrismaClient seed context (upsert blocks) ==="
+grep -nE 'prisma\.(student|admin)\.upsert|await prisma\.\$disconnect' gemini.md \
+  | grep -vE 'You said|user-query'
+=== seed.ts fingerprints ===
+64408:async function main() {
+64479:    await prisma.$disconnect();
+68515:async function main() {
+68526:  const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+68527:  const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+68601:    await prisma.$disconnect();
+89039:async function main() {
+89061:const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+89063:const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+89213:await prisma.\$disconnect();
+101300:  .finally(() => prisma.$disconnect());
+101866:    await prisma.$disconnect();
+106514:async function main() {
+106536:  const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+106538:  const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+106692:    await prisma.\$disconnect();
+108193:inject().finally(() => prisma.$disconnect());
+116366:    await prisma.\$disconnect();
+116573:    await prisma.$disconnect();
+119261:clean().finally(() => prisma.$disconnect());
+132671:async function main() {
+132693:  const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+132695:  const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+132849:    await prisma.\$disconnect();
+132969:    **`bcrypt.hashSync('password123', 10)`** to scramble your test
+149451:async function main() {
+149473:  const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+149475:  const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+149629:    await prisma.\$disconnect();
+
+=== explicit prisma/seed.ts path headers ===
+64402:// unizik-ml-fraud-frontend/prisma/seed.ts
+68508:// unizik-ml-fraud-frontend/prisma/seed.ts
+89024:// unizik-ml-fraud-frontend/prisma/seed.ts
+106499:// unizik-ml-fraud-frontend/prisma/seed.ts
+132656:// unizik-ml-fraud-frontend/prisma/seed.ts
+149436:// unizik-ml-fraud-frontend/prisma/seed.ts
+
+=== PrismaClient seed context (upsert blocks) ===
+64479:    await prisma.$disconnect();
+68601:    await prisma.$disconnect();
+101866:    await prisma.$disconnect();
+116573:    await prisma.$disconnect();
+divine-vessel@divinevessel-HP-EliteBook-8470p:~/Downloads$ cd ~/Downloads
+
+echo "=== All schema.prisma emissions ==="
+grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma|^\s*//\s*prisma/schema\.prisma' gemini.md \
+  | grep -vE 'You said|user-query'
+
+echo ""
+echo "=== Bare generator/datasource headers (schema without path comment) ==="
+grep -nE '^generator client \{|^datasource db \{|generator client \{' gemini.md \
+  | grep -vE 'You said|user-query'
+=== All schema.prisma emissions ===
+61210:// unizik-ml-fraud-frontend/prisma/schema.prisma
+61748:// unizik-ml-fraud-frontend/prisma/schema.prisma
+62319:// unizik-ml-fraud-frontend/prisma/schema.prisma
+68167:// unizik-ml-fraud-frontend/prisma/schema.prisma
+101377:// unizik-ml-fraud-frontend/prisma/schema.prisma
+106700:  // unizik-ml-fraud-frontend/prisma/schema.prisma
+107696:// unizik-ml-fraud-frontend/prisma/schema.prisma
+112951:// unizik-ml-fraud-frontend/prisma/schema.prisma
+115936:// unizik-ml-fraud-frontend/prisma/schema.prisma
+125381:// unizik-ml-fraud-frontend/prisma/schema.prisma
+131198:// unizik-ml-fraud-frontend/prisma/schema.prisma
+135034:// unizik-ml-fraud-frontend/prisma/schema.prisma
+137280:// unizik-ml-fraud-frontend/prisma/schema.prisma
+142770:// unizik-ml-fraud-frontend/prisma/schema.prisma
+149104:// unizik-ml-fraud-frontend/prisma/schema.prisma
+165837:// unizik-ml-fraud-frontend/prisma/schema.prisma
+235419:// unizik-ml-fraud-frontend/prisma/schema.prisma
+
+=== Bare generator/datasource headers (schema without path comment) ===
+61212:generator client {
+61216:datasource db {
+61750:generator client {
+61754:datasource db {
+62323:generator client {
+62331:datasource db {
+68169:generator client {
+68173:datasource db {
+101381:generator client {
+101389:datasource db {
+106704:generator client {
+106712:datasource db {
+107700:generator client {
+107708:datasource db {
+112955:generator client {
+112963:datasource db {
+115940:generator client {
+115948:datasource db {
+125385:generator client {
+125393:datasource db {
+131202:generator client {
+131210:datasource db {
+135038:generator client {
+135046:datasource db {
+137284:generator client {
+137292:datasource db {
+142774:generator client {
+142782:datasource db {
+149108:generator client {
+149116:datasource db {
+165841:generator client {
+165849:datasource db {
+234569:datasource db {
+235069:datasource db {
+235423:generator client {
+235431:datasource db {
+246877:datasource db {
+248882:generator client {
+248886:datasource db {
+divine-vessel@divinevessel-HP-EliteBook-8470p:~/Downloads$ ^C
+divine-vessel@divinevessel-HP-EliteBook-8470p:~/Downloads$ 
+
+
+
+
+
+
+
+
+
+
+
+
+# 🤖 HANDOFF PROTOCOL — How to extract lost code from a Gemini conversation save
+
+Copy the entire section below (from `## START OF HANDOFF` to `## END OF HANDOFF`) into the new AI's first message, plus the user's specific file request. Then continue working.
+
+---
+
+## START OF HANDOFF
+
+You are taking over a **code-recovery project** for a final-year CS student at Nnamdi Azikiwe University (UNIZIK), Nigeria. Their original Next.js project was lost when their OS was reinstalled. They have a **Gemini chat save** (`~/Downloads/gemini.md`, converted from a 21.9 MB HTML save via pandoc) that contains the full timeline of every frontend file being written, patched, and re-written.
+
+**Your job:** extract the final state of each file by mining `gemini.md`, verify against the working tree, and hand the user paste-ready files. **Do not regenerate from scratch** unless extraction fails.
+
+---
+
+### 0. Environment facts you must internalise
+
+- **Source of truth:** `~/Downloads/gemini.md` (~260K lines, 1,044 code fences)
+- **Working tree:** `~/Projects/unizik-ml-project/frontend/`
+- **Stack:** Next.js 15 App Router, TypeScript, Tailwind CSS, Prisma + SQLite, bcrypt auth, Python ML backend (already recovered)
+- **Database:** SQLite (`file:./dev.db`), provider is `sqlite` in `prisma/schema.prisma`
+- **Approved project topic:** *"Development of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification"*
+- **Project brand colors:** Navy `#001C3D`, Orange `#F58220`
+- **Old Gemini path prefix:** `unizik-ml-fraud-frontend/src/...` — new filesystem path is `frontend/src/...` (just drop the `unizik-ml-fraud-frontend/`)
+- **User's mental model (correct):** *"gemini.md is a linear timeline. Final state = last complete emission + every patch after it, applied in order."*
+- **User tools:** `grep`, `sed`, `python3` — all working. `grep` had a transient PATH issue once; re-check with `command -v grep` if it acts up.
+- **Bracketed paste:** user disabled via `bind 'set enable-bracketed-paste off'` in `.bashrc`. If they see `^[[200~` in terminal output, remind them.
+
+---
+
+### 1. The proven extraction loop
+
+For **every** file, you run this 5-step cycle. Do not skip steps. Do not improvise.
+
+#### Step 1 — LOCATE: find every emission of the file
+
+```bash
+cd ~/Downloads
+grep -nE 'PATH_PATTERN' gemini.md | grep -vE 'You said|user-query|placeholder'
+```
+
+`PATH_PATTERN` must be regex-flexible. See **Section 2** for pattern construction.
+
+**What you're looking for:** every line number where the file path, its header comment, or its distinctive function signatures appear.
+
+#### Step 2 — CLASSIFY: how many distinct emissions exist?
+
+Look at the line numbers. Cluster them: hits within ~200 lines of each other are probably the **same emission** (file header + imports + body + closing). Clusters separated by thousands of lines are **different emissions**.
+
+Common pattern:
+- **V1:** First emission (~`L68000`)
+- **V2:** Second emission, often after a bug fix or UI overhaul (~`L130000`)
+- **V3+:** Rare, but happens (e.g., third iteration after role mismatch fix)
+
+You will almost always want the **latest** emission, **plus** any small patches that appear after it.
+
+#### Step 3 — EXTRACT: pull the raw bytes
+
+For **each** emission you'll need, sed a window that covers start → end:
+
+```bash
+# Start 10-20 lines before first strong hit (to catch the header comment)
+# End 10-30 lines after last signature hit (to catch the closing brace + next file marker)
+sed -n 'START,ENDp' gemini.md > file_vN_raw.txt
+wc -l file_vN_raw.txt
+```
+
+**Rule of thumb for window sizing:**
+- Small file (30–100 lines of real code): window = ~150 lines
+- Medium file (100–400 lines): window = ~500 lines
+- Large file (400+ lines): window = ~1000 lines, or split into 2 seds
+
+**Always check the raw file ends cleanly** — should end with `}` + blank lines + a new `// path/to/next-file.ts` header or `### Step N:` header. If it ends mid-function, your window is too narrow — extend END.
+
+#### Step 4 — CLEAN: strip the Gemini HTML div noise
+
+Raw sed output has `<div class="code-block...">` wrappers, `_ngcontent-ng-c...` attributes, `jslog="..."` blobs, `NextResponse\.json` escape backslashes, etc.
+
+Two approaches depending on file size:
+
+**A) Small files (< 300 lines):** paste the raw to the AI, AI cleans inline.
+
+**B) Large files:** user runs this Python (put in `~/Downloads/clean_code_block.py`):
+
+```python
+#!/usr/bin/env python3
+"""Strip Gemini HTML wrapper junk, keep only the code inside ``` fences."""
+import re, sys
+
+path = sys.argv[1]
+lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
+
+out = []
+in_fence = False
+for ln in lines:
+    # Enter fenced block
+    if ln.strip().startswith("```"):
+        in_fence = not in_fence
+        continue
+    if in_fence:
+        # Unescape Gemini's aggressive escaping
+        ln = ln.replace("\\`", "`").replace("\\|", "|").replace("\\$", "$")
+        ln = ln.replace("\\_", "_").replace("\\*", "*").replace("\\[", "[")
+        ln = ln.replace("\\]", "]").replace("\\{", "{").replace("\\}", "}")
+        ln = re.sub(r"\\ ", " ", ln)  # \ before space
+        out.append(ln)
+
+print("\n".join(out))
+```
+
+Usage:
+```bash
+python3 ~/Downloads/clean_code_block.py file_vN_raw.txt > file_vN_clean.ts
+head -20 file_vN_clean.ts   # verify: should start with "// path" or "import"
+tail -10 file_vN_clean.ts   # verify: should end with "}" not "<div>"
+```
+
+If the file has **multiple code blocks** (initial + patches), the cleaner outputs them concatenated. Split manually or note block boundaries before cleaning.
+
+#### Step 5 — VERIFY: cross-check against other versions + patches
+
+Diff V1 vs V2 (if both exist):
+```bash
+diff -u file_v1_clean.ts file_v2_clean.ts | head -100
+```
+
+Then search for **small patches after V2**. Patches look like:
+
+```bash
+# Patches reference the file + a specific line/function
+grep -nE 'src/.*FILENAME|PATH_FRAGMENT' gemini.md | awk -F: '$1 > V2_START_LINE'
+```
+
+Common patch markers in prose:
+- `**WHERE:** In src/app/.../FILENAME`
+- `**WHAT TO REPLACE:**`
+- `**CHANGE THIS:**`
+- `**FIND:** ... **REPLACE WITH:** ...`
+- `**Fragment N:**`
+- `// where to swap` / `// patch` comments inside the code block
+- Very short code blocks (< 20 lines) that reference the file
+
+For each patch you find, **ask the user to paste it**, then manually apply to the V2 clean file. Do not skip patches — they contain critical fixes (auth routing, role checks, bug fixes, styling swaps).
+
+#### Step 6 — DELIVER: hand the user the final merged file
+
+Output the **complete, paste-ready** file with:
+- Header comment updated to real filesystem path (`src/app/(auth)/login/page.tsx` not `unizik-ml-fraud-frontend/...`)
+- Any unused imports removed (ESLint-strict)
+- All patches applied
+- Tabs = 2 spaces, Tailwind class order preserved, no reformatting beyond what's needed
+
+Then provide:
+- **Diff table:** which patch was applied (with line numbers in gemini.md)
+- **Verification commands:** how to test that this file works (curl commands, `npm run dev`, browser check)
+
+---
+
+### 2. Regex pattern bank (copy-paste these)
+
+The user's earlier regex `src/[a-zA-Z0-9_./\[\]-]+\.(ts|tsx|css)` was too narrow. **Use these instead** for each file type:
+
+**Next.js page files:**
+```bash
+grep -nE 'app/\([a-z]+\)/.*page\.tsx|app/[a-z]+(/[a-z]+)*/page\.tsx|src/app/.*/page\.tsx' gemini.md
+```
+
+**Next.js layout:**
+```bash
+grep -nE 'app/layout\.tsx|src/app/layout\.tsx' gemini.md
+```
+
+**Next.js API routes (any depth):**
+```bash
+grep -nE 'app/api/[a-zA-Z0-9_./\[\]-]+/route\.ts|src/app/api/.*route\.ts' gemini.md
+```
+
+**Components:**
+```bash
+grep -nE 'src/components/[A-Z][a-zA-Z]+\.tsx' gemini.md
+```
+
+**Lib files:**
+```bash
+grep -nE 'src/lib/[a-z-]+\.ts' gemini.md
+```
+
+**Prisma schema:**
+```bash
+grep -nE 'prisma/schema\.prisma|prisma\\schema\.prisma' gemini.md
+```
+
+**Seed:**
+```bash
+grep -nE 'prisma/seed\.ts|prisma\\seed\.ts' gemini.md
+```
+
+**Package config:**
+```bash
+grep -nE 'package\.json|package\\\.json' gemini.md | grep -vE 'You said|placeholder'
+```
+
+**Any file path generic (broad net):**
+```bash
+grep -nE '// unizik-ml-fraud-frontend/[^\s]+\.(ts|tsx|css|prisma|json)|// src/[^\s]+\.(ts|tsx|css)' gemini.md | grep -vE 'You said'
+```
+
+**Code-signal heuristics (when path doesn't appear, but code does):**
+
+For `seed.ts`:
+```bash
+grep -nE '\$disconnect|async function main\(\)|hashSync\(.password123|hashSync\(.admin123|prisma\.(student|admin)\.upsert' gemini.md
+```
+
+For `prisma.ts`:
+```bash
+grep -nE 'globalForPrisma|PrismaClient\(\)|new PrismaClient' gemini.md
+```
+
+For `middleware.ts`:
+```bash
+grep -nE 'export (async )?function middleware|NextResponse\.redirect.*matcher|config\s*=\s*\{[^}]*matcher' gemini.md
+```
+
+For auth routes:
+```bash
+grep -nE 'bcrypt\.(hash|compare)Sync|NextResponse\.json\(\{\s*success.*role|unizik_session' gemini.md
+```
+
+---
+
+### 3. The multi-scan Python tool (when grep alone isn't enough)
+
+Save as `~/Downloads/find_file.py`. This runs **3 passes** (strong path / weak header / code signal) and clusters hits by proximity — essential for files emitted multiple times.
+
+```python
+#!/usr/bin/env python3
+"""
+Multi-pass file finder for gemini.md.
+Usage: python3 find_file.py gemini.md path/to/file.ts
+       python3 find_file.py gemini.md --signal bcrypt
+"""
+import re, sys
+
+path = sys.argv[1]
+query = sys.argv[2]
+
+lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
+
+# Build 3 pattern tiers based on the query
+if query.startswith("--signal"):
+    signal_word = query.split()[1]
+    STRONG = [re.escape(signal_word)]
+    WEAK   = [rf"//\s*.*{re.escape(signal_word)}.*\.(ts|tsx)"]
+    SIGNAL = [rf"\b{re.escape(signal_word)}\b.*\("]
+else:
+    fname = query.split("/")[-1]        # e.g. "seed.ts"
+    fstem = fname.rsplit(".", 1)[0]     # e.g. "seed"
+    ext   = fname.rsplit(".", 1)[-1]    # e.g. "ts"
+    STRONG = [re.escape(query), re.escape(query.replace("/", "\\\\"))]
+    WEAK   = [
+        rf"//\s*.*[/\\]{re.escape(fstem)}\.{ext}",
+        rf"\*\*FILE:\*\*\s*.*{re.escape(fstem)}\.{ext}",
+        rf"^#+\s*Step\s+\d+.*{re.escape(fstem)}",
+    ]
+    SIGNAL = [
+        rf"export\s+(default\s+)?(async\s+)?function\s+\w+",
+        rf"^\s*import\s+.*from\s+['\"].*{re.escape(fstem)}",
+    ]
+
+def scan(pats, label):
+    hits = []
+    for i, ln in enumerate(lines, 1):
+        for p in pats:
+            if re.search(p, ln, re.I):
+                hits.append((i, ln.strip()[:140]))
+                break
+    print(f"\n=== {label} — {len(hits)} hits ===")
+    for i, ln in hits[:40]:
+        print(f"L{i:>7}: {ln}")
+    return [h[0] for h in hits]
+
+strong = scan(STRONG, "STRONG (explicit path)")
+weak   = scan(WEAK,   "WEAK (header heuristics)")
+signal = scan(SIGNAL, "SIGNAL (code smells)")
+
+all_hits = sorted(set(strong + weak + signal))
+clusters = []
+if all_hits:
+    cur = [all_hits[0]]
+    for h in all_hits[1:]:
+        if h - cur[-1] <= 250:
+            cur.append(h)
+        else:
+            clusters.append(cur); cur = [h]
+    clusters.append(cur)
+
+print("\n=== CLUSTERS (candidate file emissions) ===")
+for c in clusters:
+    print(f"  L{c[0]}–L{c[-1]}  ({len(c)} hits)  → sed -n '{c[0]-20},{c[-1]+50}p'")
+```
+
+Run for any file:
+```bash
+python3 ~/Downloads/find_file.py ~/Downloads/gemini.md src/app/page.tsx
+```
+
+**Interpreting clusters:**
+- **1 cluster** → single emission, extract that range
+- **2+ clusters** → multiple emissions (V1, V2…), usually pick the **last** cluster
+- **Cluster near cluster** (gap < 500 lines) → file emitted + patched immediately → treat as one emission
+- **Cluster very far apart** (gap > 5000) → truly different emissions; compare to see which is newer
+
+---
+
+### 4. Case studies (real, from this project)
+
+#### Case study A — `login/page.tsx` (2 emissions + patches)
+
+**What grep showed:**
+```
+L67703: heading mention (not code)
+L68859: ### Step 6: The Frontend Login Page (src/app/login/page.tsx)
+L68897: ``` + // unizik-ml-fraud-frontend/src/app/login/page.tsx  ← V1 starts
+L76218: ### The Complete Production Code (src/app/login/page.tsx)
+L76255: // unizik-ml-fraud-frontend/src/app/login/page.tsx  ← V2 starts (final UI)
+L77589: user pasted V2 back for review (ignore — user's own message)
+L78184: // src/app/login/page.tsx  ← PATCH 1 (logo swap)
+L89408: // src/app/login/page.tsx  ← PATCH 2 (role check fix)
+L89641: // src/app/login/page.tsx  ← PATCH 3 (embed role in localStorage)
+L130717: user request that pasted V2 back (ignore)
+L131679: // Inside .../login/page.tsx  ← PATCH 4 (register link)
+```
+
+**Decision:** V2 (L76218) is the full final UI. Apply patches 1, 3, 4 (patch 2 is superseded by patch 3). Result: final login page.
+
+**Command sequence the user ran:**
+```bash
+grep -n -B10 -A30 'login/page\.tsx\|login\\page\.tsx' gemini.md > login_timeline.txt
+wc -lc login_timeline.txt        # 733 lines, 30 KB
+# user pasted the whole timeline
+```
+
+**Then:**
+```bash
+sed -n '132305,132490p' gemini.md > login_route_v2.txt   # (that was for the route file)
+```
+
+**Lesson:** User's "the second full login/page.tsx I saw" instinct was correct — V2 was the final UI. Patches came after and were small.
+
+#### Case study B — `api/auth/login/route.ts` (2 emissions, identical)
+
+**What the multi-scan showed:**
+```
+STRONG hits:
+  L68658: heading
+  L68660: heading
+  L68692: ``` + // path  ← V1 starts
+  L68926: fetch() in next file (login page)
+  L132315: // path  ← V2 starts
+
+SIGNAL hits:
+  L68712: bcrypt.compareSync  ← inside V1
+  L68716: role: 'ADMIN' response  ← inside V1
+  L68725: bcrypt.compareSync  ← inside V1
+  L132358: bcrypt.compareSync  ← inside V2
+  L132367: role: 'ADMIN' response  ← inside V2
+```
+
+**Decision:** V2 (L132315) is the last emission. But the user's paste showed V1 and V2 were **byte-identical** for the login route (different registers only for register/route.ts, which had SHA-256 bug). So we shipped the version as-is without merging.
+
+**Lesson:** Always diff V1 and V2 before assuming patches exist. Sometimes Gemini re-emitted the exact same file just to give it context again.
+
+#### Case study C — `api/auth/register/route.ts` (V2 has SHA-256 BUG)
+
+**What V1 showed:** correct bcrypt version, safe.
+**What V2 showed:** correct bcrypt version — WAIT, the paste from `sed -n '132305,132490p'` showed **register route with `import crypto from 'crypto'`** at the end. But at line `L133025` in the conversation, Gemini diagnosed: *"the login API ran the bcrypt checker against a SHA-256 string"*.
+
+**Diagnosis:** Gemini pointed to a **bug that existed in an even earlier version** of register/route.ts — the fix (to bcrypt) was already applied by the time V2 was emitted. So we extracted the fixed V2, ignored the earlier buggy V1 variant.
+
+**Lesson:** When Gemini emits a diagnosis ("why did login fail?"), the code it references in that diagnosis is often **earlier/buggy** — the *fixed* version appears in the next emission, not the diagnostic message itself.
+
+#### Case study D — `prisma/schema.prisma` (multiple tiny patches)
+
+**What the earlier scan showed:** schema.prisma appears 18+ times — at L61210, L61748, L62319, L68167, L101377, L106700, L107696, L112951, L114932, L115936, L125381, L131198, L135034, L137280, L142770, L149104, L165837, L235419. Plus `model Student` / `model Admin` bare headers at L40 and L62 in the on-disk version.
+
+**Decision:** There are likely **4–6 major rewrites** and **10+ small patches** (e.g., "add `role` field to Admin", "add `deviceId` to Transaction"). Rather than pick one, **the on-disk version is often the latest** because the user copied it out near the end of the conversation.
+
+**Verify:** `diff` on-disk vs extracted latest — if empty, on-disk wins. If small diffs, ask user "which field is newer?" and patch on-disk.
+
+**Lesson:** For files that got incrementally patched many times (schema, package.json, tailwind.config), the on-disk copy is usually most recent. Extraction is for files that were **deleted** (`seed.ts`, `prisma.ts`, page components).
+
+#### Case study E — `seed.ts` (5+ emissions, need careful selection)
+
+**Signal:** `hashSync('password123', 10)` appears at L68526, L89061, L106536, L132693, L149473. Five clusters.
+
+**Workflow:**
+1. Run `find_file.py gemini.md prisma/seed.ts` to get clusters
+2. Extract each cluster
+3. Diff to see what changed between emissions (usually new test users, new invoice rows, or bug fixes to the hash method)
+4. Pick the **latest** cluster as base
+5. Apply any patches after it (small diffs to add new users, etc.)
+
+**What you'll usually find in the final seed:**
+- Admin upsert with `role: 'BURSARY_DIRECTOR'`
+- 2–4 test students with password `password123`
+- Sample `FeeInvoice` rows (PENDING/PAID)
+- Sample `Transaction` rows (CLEARED/BLOCKED) with ML feature values (`deviceId`, `ipAddress`, `pageDwellTime`, `isMachineMismatch`)
+- Sample `FraudAuditLog` rows with `verdict: 'FRAUDULENT'` (for dashboard testing)
+
+---
+
+### 5. Pitfalls you will hit — read before debugging
+
+| Pitfall | Symptom | Fix |
+|---|---|---|
+| `grep: command not found` | PATH clobbered | `export PATH="/usr/bin:/bin:$PATH"` |
+| `^[[200~` in terminal | Bracketed paste artifacts | `bind 'set enable-bracketed-paste off'` |
+| Regex misses the file | User has it but grep returns 0 | Use multi-scan `find_file.py` |
+| 100+ weak hits | Too broad | Add `\| grep -vE 'You said\|user-query'` |
+| `sed` range too narrow | File ends mid-function | Extend END by 50–200 lines, re-check |
+| HTML junk in extracted file | Forgot to run cleaner | Run `clean_code_block.py` |
+| Duplicated blocks | Same file emitted twice, your sed captured both | Stop sed at second `// path/to/file` marker |
+| Escaped chars | `\|`, `\.`, `\*` from Gemini's markdown escape | `clean_code_block.py` unescapes these |
+| Patch missed | File looks right but has known bug | Always grep for prose markers: `WHERE:`, `WHAT TO REPLACE:`, `Fragment` |
+| V1 & V2 identical | Wasted merge effort | `diff file_v1_clean.ts file_v2_clean.ts` first |
+| Schema changes dropped | Fields referenced but not in schema | Check seed.ts + route.ts imports; if field missing, extract later schema emission |
+| Wrong DB role | Login works but admin dashboard bounces | Route should accept `'ADMIN' \|\| 'BURSARY_DIRECTOR'` (patched in login page) |
+| Missing `src/lib/prisma.ts` | 500 on every API call, `[AUTH ERROR]` in console | Create the singleton (see template below) |
+| Missing `bcryptjs` | TS compile error `Cannot find module 'bcryptjs'` | `npm install bcryptjs @types/bcryptjs` |
+| SQLite locked in dev | `database is locked` error | Confirm `globalThis` cache in `prisma.ts` |
+| SHA-256 vs bcrypt bug | Correct password returns 401 | Re-run seed with bcrypt hash |
+
+---
+
+### 6. `src/lib/prisma.ts` — the singleton (if missing)
+
+```ts
+// src/lib/prisma.ts
+import { PrismaClient } from '@prisma/client';
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  });
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+export default prisma;
+```
+
+The `globalThis` cache is **required** for SQLite in Next dev — without it, hot-reload spawns new clients on every save → "database is locked".
+
+---
+
+### 7. Files remaining to reconstruct (as of handoff)
+
+| # | Path | Source hint | Priority |
+|---|------|-------------|----------|
+| 1 | `src/app/page.tsx` | grep `app/page\.tsx` → ~L68900 | HIGH (root landing) |
+| 2 | `src/app/layout.tsx` | grep `app/layout\.tsx` | HIGH |
+| 3 | `src/app/globals.css` | grep `globals\.css` | HIGH |
+| 4 | `src/components/StudentHeader.tsx` | grep `StudentHeader` | MED |
+| 5 | `src/app/dashboard/page.tsx` | grep `dashboard/page\.tsx` | HIGH |
+| 6 | `src/app/checkout/[invoiceId]/page.tsx` | grep `checkout.*invoiceId` | HIGH |
+| 7 | `src/app/(admin)/admin/transactions/page.tsx` | grep `admin/transactions/page` | HIGH |
+| 8 | `prisma/seed.ts` | `hashSync('password123'` clusters | HIGH (blocks login test) |
+| 9 | `src/lib/prisma.ts` | `globalForPrisma\|new PrismaClient` | HIGH (blocks login test) |
+| 10 | *(bonus)* `src/app/register/page.tsx` | grep `register/page\.tsx` | MED |
+| 11 | *(bonus)* `src/app/api/auth/register/route.ts` | V1 at `L~68808` already has correct bcrypt version | LOW |
+
+**Already reconstructed this session:**
+- ✅ `src/app/(auth)/login/page.tsx` (V2 + patches 1, 3, 4)
+- ✅ `src/app/api/auth/login/route.ts` (V2, identical to V1)
+
+---
+
+### 8. Testing checklist (use after each file)
+
+**After any page/component file:**
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+npm run dev
+# browser: hit the URL, check console for errors, check network tab for API calls
+```
+
+**After login route + prisma + seed (current milestone):**
+```bash
+# 1. Ensure DB is built
+npx prisma db push
+npx prisma generate
+
+# 2. Seed
+npx tsx prisma/seed.ts
+
+# 3. Verify rows
+npx prisma db execute --stdin <<< "SELECT matricNumber FROM students;"
+npx prisma db execute --stdin <<< "SELECT username, role FROM admins;"
+
+# 4. Start dev, then curl:
+curl -i -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"matricNumber":"admin","password":"admin123","deviceId":"fp-test-1","isAdmin":true}'
+# expect: 200 + {"success":true,"role":"ADMIN",...} + Set-Cookie: unizik_session
+
+curl -i -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"matricNumber":"2022/184042","password":"password123","deviceId":"fp-test-1","isAdmin":false}'
+# expect: 200 + {"success":true,"role":"STUDENT",...}
+
+curl -i -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"matricNumber":"admin","password":"WRONG","deviceId":"fp","isAdmin":true}'
+# expect: 401 + {"success":false,"error":"Invalid Admin credentials."}
+```
+
+**Expected failure modes and what they mean:**
+
+| Response | Meaning | Fix |
+|---|---|---|
+| `500 {error:"Authentication system error"}` | Route threw — likely `prisma` import failed or DB table missing | Check `src/lib/prisma.ts` exists; run `npx prisma generate` |
+| `401 {error:"Invalid Admin credentials"}` with correct password | bcrypt compare failed → wrong hash in DB | Re-run seed; check `grep bcrypt prisma/seed.ts` |
+| `404` | Route file not saved to correct path | Confirm `src/app/api/auth/login/route.ts` exists |
+| `200` but no `Set-Cookie` header | Cookie set failed | Check route's `response.cookies.set(...)` block survived cleaning |
+
+---
+
+### 9. Communication style with this user
+
+- **Direct, no fluff.** They are time-pressured ("exam tomorrow", "before end of today").
+- **Trust their memory** of what's in `gemini.md`. If they say a file is there, it's there — mine harder, don't argue.
+- **Paste-ready files**, not snippets. Unless they ask for a diff, always give the whole file.
+- **Table of contents first** (which patch, which line) then the file.
+- **One file per message** in chat — don't dump 8 files in one reply, they can't paste that fast.
+- **Acknowledge corrections** ("you're right, I checked, it's there") — don't double down.
+- **No "I can't read 260K lines" handwringing.** Say "I don't need to read it all — the cluster map is enough."
+- **Nigerian English cues:** "omo", "oo", "abeg", "wahala" — they sometimes use it in prompts. Don't be alarmed; just respond to the code intent.
+
+---
+
+### 10. TL;DR — the loop, in 8 lines
+
+```
+1. grep or python3 find_file.py → line numbers of every emission
+2. Cluster them → identify V1, V2, patches
+3. sed -n 'START,ENDp' → raw bytes
+4. python3 clean_code_block.py → strip HTML wrappers + unescape
+5. diff V1 vs V2 → confirm which is final
+6. grep prose markers (WHERE/REPLACE/Fragment) → find patches
+7. hand user clean merged file with diff table + test commands
+8. wait for user test result → repeat for next file
+```
+
+Do that. Do it in order. Don't improvise. Verify against on-disk files before declaring anything done.
+
+## END OF HANDOFF
+
+---
+
+## 👉 Now the message you send the new AI:
+
+After pasting the handoff above, add this as the **second** message:
+
+```
+Continuing from handoff. Next file to reconstruct: prisma/seed.ts + src/lib/prisma.ts.
+
+Already confirmed on disk:
+- prisma/schema.prisma has Student, Admin, loginDeviceId, username, fullName (verified by grep)
+- provider is "sqlite" ✓
+- bcryptjs NOT installed yet
+- src/lib/prisma.ts MISSING
+- prisma/seed.ts MISSING
+
+Sources: gemini.md at ~/Downloads/gemini.md (260K lines, 1044 fences).
+Seed.ts emissions clustered around L68526, L89061, L106536, L132693, L149473 (from earlier signal scan).
+
+Run the multi-scan for both files, show me the clusters, then extract the latest emission of each, clean, and hand me paste-ready files.
+
+Do NOT generate from scratch — extract from gemini.md only.
+```
+
+That's the whole handoff. Send those two blocks in the new chat and the new AI is up to speed. ⚡
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 📋 FULL CONTEXT HANDOFF — Session Summary
+
+Save this as `SESSION_HANDOFF_02.md`. Paste as message 1 in new chat.
+
+---
+
+## 1. User & Project (unchanged from prior handoff)
+
+- **Name:** Okeke Divine-Vessel · **Reg:** 2022514075 · **UNIZIK Final Year B.Sc. CS**
+- **Working dir:** `~/Projects/unizik-ml-project/frontend/`
+- **OS:** Fresh install (recovery situation)
+- **Topic:** *"Development of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification"*
+- **Source of truth:** `~/Downloads/gemini.md` (~260K lines, 1,044 code fences, pandoc-converted from Gemini HTML save)
+- **Stack (recovered):** Next.js 16.2.10 App Router, React 19.2.4, TypeScript 5, Tailwind CSS 4, Prisma **6.19.0** + SQLite, bcryptjs, lucide-react, zod
+- **Branding:** Navy `#001C3D` + Orange `#F58220`
+
+---
+
+## 2. 🚨 CRITICAL — Recovered `package.json` (SOURCE OF TRUTH)
+
+User pasted this mid-session. **This is the actual recovered `package.json` — do not deviate from these versions:**
+
+```json
+{
+  "name": "unizik-ml-fraud-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.25.0",
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "prisma": "^6.19.0",
+    "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  }
+}
+```
+
+**Key facts:**
+- **Prisma 6.19.0** (NOT 7, NOT 8) — `url = env("DATABASE_URL")` belongs **inside** `schema.prisma`
+- **Seed hook uses `ts-node`** with CommonJS compiler option — NOT `tsx`, NOT `npx`
+- **Tailwind CSS 4** — `globals.css` must use `@import "tailwindcss"` NOT `@tailwind base;`
+- **Next 16.2.10** (not Next 15 as original handoff said — trust this version)
+
+---
+
+## 3. ⚠️ What Went Wrong This Session (so you don't repeat it)
+
+### Sequence of errors:
+1. Session started with Prisma `^7.10.1` and `^8.0.0-rc.27` CLI in `package.json` (drift from recovered state)
+2. `npx prisma migrate dev` → **`[CLI.COMMAND_MOVED]`** error (Prisma 8 RC has no `migrate dev`)
+3. Downgraded to `prisma@7` → **`P1012`** error: *"datasource property `url` is no longer supported in schema files"* (Prisma 7 moved to `prisma.config.ts`)
+4. Attempted Prisma 7 architecture (`prisma.config.ts` + `@prisma/adapter-better-sqlite3`) → user corrected: **"we MUST not deviate from our recovery architecture"**
+5. User pasted actual recovered `package.json` → confirmed **Prisma 6**, not 7
+
+### Diagnostic lesson:
+- **Prisma 6** = url in schema, no adapter, `.env` auto-loaded, `migrate dev` works normally
+- **Prisma 7** = url in `prisma.config.ts`, **driver adapter REQUIRED** (better-sqlite3), `.env` needs `import 'dotenv/config'`, no auto-seed
+- **Prisma 8 RC** = completely new CLI (contract emit, migration plan, db migrate)
+- **This project = Prisma 6.** Do not "helpfully upgrade."
+
+### Tailwind 4 confusion:
+- User saw `Unknown at rule @tailwindcss(unknownAtRules)` and `Unknown at rule @apply`
+- Cause: `globals.css` still has Tailwind 3 syntax (`@tailwind base;` etc.)
+- Fix: single line `@import "tailwindcss";` at top
+
+---
+
+## 4. ✅ What Was Verified/Confirmed This Session
+
+### Extraction done:
+| File | Location in gemini.md | Status |
+|------|----------------------|--------|
+| `prisma/seed.ts` | Last emission **L149436 → L149650** | Extracted, cleaned, hardened (see §5) |
+| `prisma/schema.prisma` | Last full emission **L235419** | `postgresql` — **DO NOT USE** (Vercel deploy version) |
+| `prisma/schema.prisma` | Bare block **L248882** | Also `postgresql` — also skip |
+| `src/lib/prisma.ts` | L63814 (`// src/lib/prisma.ts`) | Matches on-disk, verified correct |
+
+### On-disk state confirmed:
+| File | Status |
+|------|--------|
+| `prisma/schema.prisma` | ✅ Exists, **`sqlite`** provider, 4 enums + 6 models (Student, Admin, FeeInvoice, Transaction, FraudAuditLog, Appeal) — **KEEP AS-IS** |
+| `prisma/seed.ts` | ⏳ **MISSING** — needs to be saved from §5 |
+| `src/lib/prisma.ts` | ✅ Exists, standard Prisma 6 singleton (no adapter) |
+| `src/lib/fingerprint.ts` | ✅ Exists, exports `generateDeviceFingerprint` |
+| `src/lib/fraud-engine.ts` | ✅ Exists |
+| `src/app/(auth)/login/page.tsx` | ✅ Reconstructed in prior session |
+| `src/app/api/auth/login/route.ts` | ✅ Exists (backend done) |
+| `public/unizik.png` | ✅ Exists |
+| `bcryptjs` | ✅ Installed |
+| `.env` | ✅ `DATABASE_URL="file:./dev.db"` |
+
+### Schema provider decision:
+- **On-disk `sqlite` wins** for local dev
+- gemini.md emissions are `postgresql` — those are for **Vercel/Supabase deploy only**
+- Do not touch the on-disk schema provider
+
+---
+
+## 5. 📄 `prisma/seed.ts` — Full Final Code (paste-ready)
+
+**Save to:** `~/Projects/unizik-ml-project/frontend/prisma/seed.ts`
+
+```ts
+// prisma/seed.ts
+
+import { PrismaClient, FeeCategory, InvoiceStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Initiating UNIZIK Ledger Seeding Protocol...');
+
+  // 1. Wipe old records
+  await prisma.appeal.deleteMany();
+  await prisma.fraudAuditLog.deleteMany();
+  await prisma.transaction.deleteMany();
+  await prisma.feeInvoice.deleteMany();
+  await prisma.student.deleteMany();
+  await prisma.admin.deleteMany();
+
+  const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+  const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+
+  // 2. Create Admin Account
+  await prisma.admin.create({
+    data: {
+      username: 'admin',
+      password: adminPasswordHash,
+      fullName: 'Dr. Prof. B.O. Ekeh (Chief Bursary Officer)',
+      role: 'BURSARY_DIRECTOR',
+    },
+  });
+
+  // 3. Create Student 1: Normal Undergraduate Profile (Chinedu)
+  const student1 = await prisma.student.create({
+    data: {
+      matricNumber: '2022514001',
+      email: 'c.okafor@unizik.edu.ng',
+      password: defaultPasswordHash,
+      firstName: 'Chinedu',
+      lastName: 'Okafor',
+      department: 'Computer Science',
+      level: 400,
+      loginDeviceId: 'UNIZIK_FP_CLEAN_BASELINE_CHINEDU',
+    },
+  });
+
+  await prisma.feeInvoice.create({
+    data: {
+      studentId: student1.id,
+      category: FeeCategory.TUITION,
+      amount: 85500.00,
+      session: '2025/2026',
+      status: InvoiceStatus.PENDING,
+    },
+  });
+
+  // 4. Create Student 2: High-Risk Attack Target Profile (Sohail)
+  const student2 = await prisma.student.create({
+    data: {
+      matricNumber: '2022514009',
+      email: 'sohail.sec@unizik.edu.ng',
+      password: defaultPasswordHash,
+      firstName: 'Sohail',
+      lastName: 'Abdel',
+      department: 'Computer Science',
+      level: 400,
+      loginDeviceId: 'UNIZIK_FP_ORIGINAL_SOHAIL_LAPTOP',
+    },
+  });
+
+  await prisma.feeInvoice.create({
+    data: {
+      studentId: student2.id,
+      category: FeeCategory.ACCEPTANCE,
+      amount: 45000.00,
+      session: '2025/2026',
+      status: InvoiceStatus.PENDING,
+    },
+  });
+
+  console.log('✅ Seeding Complete! Demo Login Credentials Established:');
+  console.log('----------------------------------------------------------------');
+  console.log('[NORMAL STUDENT] Matric: 2022514001  | Pass: password123');
+  console.log('[ATTACK TARGET]  Matric: 2022514009  | Pass: password123');
+  console.log('[ADMIN COMMAND]  User:   admin        | Pass: admin123');
+  console.log('----------------------------------------------------------------');
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Fatal error during database seeding:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+```
+
+**Patches applied vs. raw L149436 extraction:**
+- Removed pandoc HTML junk after `});`
+- Unescaped `\[` → `[`, `\]` → `]`, `\$` → `$`, `\>` → `>`
+- Fixed stale `console.log` matric values (original had wrong `2022/184042` / `2022/184099`; corrected to actual seeded `2022514001` / `2022514009`)
+- Header path corrected to `prisma/seed.ts`
+
+**Seed credentials:**
+
+| Matric | Role | Password | Profile |
+|--------|------|----------|---------|
+| `admin` | `BURSARY_DIRECTOR` | `admin123` | Dr. Prof. B.O. Ekeh |
+| `2022514001` | `STUDENT` | `password123` | Chinedu Okafor · L400 · TUITION ₦85,500 PENDING |
+| `2022514009` | `STUDENT` | `password123` | Sohail Abdel · L400 · ACCEPTANCE ₦45,000 PENDING |
+
+---
+
+## 6. 📄 `src/lib/prisma.ts` — Full Final Code (paste-ready)
+
+**Save to:** `~/Projects/unizik-ml-project/frontend/src/lib/prisma.ts`
+
+```ts
+// src/lib/prisma.ts
+import { PrismaClient } from '@prisma/client';
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log:
+      process.env.NODE_ENV === 'development'
+        ? ['error', 'warn']
+        : ['error'],
+  });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
+export default prisma;
+```
+
+**Note:** This is Prisma 6 style — NO adapter, NO `prisma.config.ts` import.
+
+---
+
+## 7. 📄 `src/app/globals.css` — Top-of-file fix
+
+**Save to:** `~/Projects/unizik-ml-project/frontend/src/app/globals.css`
+
+**Replace** any leading `@tailwind base;` / `@tailwind components;` / `@tailwind utilities;` with:
+
+```css
+@import "tailwindcss";
+
+/* ... rest of custom CSS ... */
+```
+
+**Do not** restore `@tailwind` directives — they break Tailwind 4 with `Unknown at rule` errors.
+
+**Also verify** `postcss.config.mjs`:
+
+```js
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+export default config;
+```
+
+---
+
+## 8. 🔄 Current Phase Status (mid-rollback)
+
+**Goal:** Reset from Prisma 7 back to Prisma 6 + fix Tailwind 4 syntax, then migrate + seed + test.
+
+### Phase 1 — Purge Prisma 7 artifacts
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+npm uninstall prisma @prisma/client @prisma/adapter-better-sqlite3 better-sqlite3 @types/better-sqlite3 dotenv
+rm -f prisma.config.ts
+rm -rf prisma/migrations prisma/dev.db prisma/dev.db-journal
+```
+**Status:** ⏳ NOT YET RUN (was the last instruction output to user)
+
+### Phase 2 — Restore recovered `package.json`
+**Status:** ⏳ NOT YET RUN — user needs to paste block from §2
+
+### Phase 3 — Prisma 6 schema + client + seed
+- `schema.prisma` — restore `url = env("DATABASE_URL")` line
+- `src/lib/prisma.ts` — save from §6
+- `prisma/seed.ts` — save from §5
+**Status:** ⏳ NOT YET RUN
+
+### Phase 4 — Tailwind 4 fix
+- `globals.css` — `@import "tailwindcss";` at top
+**Status:** ⏳ NOT YET RUN
+
+### Phase 5 — `npm install && migrate && seed`
+```bash
+npm install
+npx prisma generate
+npx prisma migrate dev --name init
+npx prisma db seed
+```
+**Expected seed output:**
+```
+Running seed command `ts-node --compiler-options {"module":"CommonJS"} prisma/seed.ts` ...
+🌱 Initiating UNIZIK Ledger Seeding Protocol...
+✅ Seeding Complete! Demo Login Credentials Established:
+----------------------------------------------------------------
+[NORMAL STUDENT] Matric: 2022514001  | Pass: password123
+[ATTACK TARGET]  Matric: 2022514009  | Pass: password123
+[ADMIN COMMAND]  User:   admin        | Pass: admin123
+----------------------------------------------------------------
+```
+**Status:** ⏳ NOT YET RUN
+
+### Phase 6 — Verify + curl test
+```bash
+sqlite3 prisma/dev.db "SELECT matricNumber, firstName, level FROM students;"
+sqlite3 prisma/dev.db "SELECT username, role FROM admins;"
+
+# Terminal 1
+npm run dev
+
+# Terminal 2
+curl -i -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"matricNumber":"admin","password":"admin123","deviceId":"fp-test-1","isAdmin":true}'
+
+curl -i -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"matricNumber":"2022514001","password":"password123","deviceId":"fp-test-1","isAdmin":false}'
+```
+**Status:** ⏳ NOT YET RUN
+
+---
+
+## 9. 📋 Files Still To Reconstruct (frontend, after this phase)
+
+| # | File | Priority | Gemini hint |
+|---|------|----------|-------------|
+| 1 | `src/app/page.tsx` | **HIGH** (next after this phase) | grep `app/page\.tsx` |
+| 2 | `src/app/layout.tsx` | HIGH | grep `app/layout\.tsx` |
+| 3 | `src/app/globals.css` | HIGH (partially done — see §7) | grep `globals\.css` |
+| 4 | `src/components/StudentHeader.tsx` | MED | grep `StudentHeader` |
+| 5 | `src/app/dashboard/page.tsx` | HIGH | grep `dashboard/page\.tsx` |
+| 6 | `src/app/checkout/[invoiceId]/page.tsx` | HIGH | grep `checkout.*invoiceId` |
+| 7 | `src/app/(admin)/admin/transactions/page.tsx` | HIGH | grep `admin/transactions/page` |
+| 8 | `src/app/register/page.tsx` (bonus) | MED | Found at L~149650 bleeding into seed extraction |
+| 9 | `src/app/api/auth/register/route.ts` (bonus) | LOW | L~68808 |
+
+**Already done (from prior session):**
+- ✅ `src/app/(auth)/login/page.tsx`
+- ✅ `src/app/api/auth/login/route.ts`
+
+---
+
+## 10. 🔧 Environment Notes
+
+- **Shell:** bash, user `divine-vessel@divinevessel-HP-EliteBook-8470p`
+- **Node:** v24.22.1
+- **npm warn:** *"install-scripts not yet covered by allowScripts"* — this is a new npm behavior; some packages skip postinstall. If `better-sqlite3` or `@prisma/engines` fail, run `npm install-scripts approve <pkg>` or `npm config set ignore-scripts false`.
+- **`grep` works** — used successfully many times this session
+- **`sed`, `diff`, `python3` all work**
+- **`sqlite3` CLI** — user has it (used in earlier verification); if `command not found`, `sudo apt install -y sqlite3`
+- **Bracketed paste:** disabled (`bind 'set enable-bracketed-paste off'` in `.bashrc`)
+
+---
+
+## 11. 🎯 Immediate Next Steps (in new conversation)
+
+1. **Ask user** whether Phases 1–6 from §8 have been run. If not, walk them through in order.
+2. **If Phases 1–6 fail at any step**, diagnose:
+   - `npm install` peer errors → likely Prisma 6 vs types mismatch → use `--legacy-peer-deps`
+   - `prisma generate` P1012 → schema still has `url` removed → restore `url = env("DATABASE_URL")` in datasource block
+   - `migrate dev` fails on drift → `rm prisma/dev.db` then retry
+   - `db seed` fails on `ts-node` → verify `ts-node` installed (`npm ls ts-node`); if missing, `npm install -D ts-node`
+   - Login 500s → check `src/lib/prisma.ts` has no adapter import (Prisma 6 style per §6)
+3. **Once login curl returns 200 with `Set-Cookie: unizik_session`**, milestone complete.
+4. **Start `src/app/page.tsx` reconstruction:**
+   ```bash
+   cd ~/Downloads
+   grep -n -B10 -A40 'app/page\.tsx\|src/app/page\.tsx' gemini.md > root_page_timeline.txt
+   wc -lc root_page_timeline.txt
+   cat root_page_timeline.txt
+   ```
+5. Follow standard extraction loop (§4 of prior handoff protocol).
+
+---
+
+## 12. ⚠️ Behavioral Rules (carry forward)
+
+**Do:**
+- Trust recovered `package.json` — **Prisma 6, Next 16, Tailwind 4, ts-node seed**
+- Assume `gemini.md` has the code — mine harder if grep returns empty
+- Output **complete, paste-ready** files — no fragments
+- Preserve exact styling (Navy `#001C3D`, Orange `#F58220`, Tailwind classes)
+- Acknowledge corrections instantly
+- One file at a time (user pastes fast but not that fast)
+
+**Don't:**
+- Suggest upgrading Prisma to 7 or 8 — **recovery architecture is Prisma 6**
+- Add `prisma.config.ts`, `@prisma/adapter-better-sqlite3`, or `dotenv` — those are Prisma 7 artifacts
+- Replace `sqlite` with `postgresql` in schema — that's deploy-only
+- Use `tsx` for seed — recovered architecture uses `ts-node` with CommonJS
+- Use `@tailwind base;` in globals.css — Tailwind 4 requires `@import "tailwindcss"`
+- Argue with user's memory of what's in gemini.md
+- Paste giant terminal dumps — summarize instead
+
+---
+
+## 13. 📌 Exact Commands to Restart (paste as message 1 in new chat)
+
+```
+Continuing from SESSION_HANDOFF_02. Project: UNIZIK fraud detection frontend recovery.
+
+CURRENT PHASE: Rolling back from accidental Prisma 7 install to recovered Prisma 6 architecture.
+
+STATUS:
+- ✅ schema.prisma on disk is SQLite (correct, keep)
+- ✅ src/lib/prisma.ts exists (Prisma 6 singleton, correct)
+- ✅ package.json recovered (Prisma 6.19.0, Next 16.2.10, Tailwind 4, ts-node seed hook) — needs to be pasted to disk
+- ⏳ prisma/seed.ts extracted from gemini.md L149436 (code ready, needs to be saved)
+- ⏳ globals.css still has Tailwind 3 syntax (@tailwind), needs @import "tailwindcss"
+- ❌ NOT YET RUN: Phase 1 purge (uninstall prisma7/adapter), Phase 2 package.json replace, Phase 5 npm install + migrate + seed, Phase 6 curl test
+
+NEXT ACTION: Confirm which of Phases 1-6 have been run. If none, walk user through Phase 1 first.
+
+CRITICAL: Do not upgrade to Prisma 7 or 8. Do not add prisma.config.ts. Do not use tsx for seed. Do not use @tailwind directives. Recovered architecture is Prisma 6 + ts-node + Tailwind 4 @import syntax.
+
+Do not deviate. Ask before assuming.
+```
+
+---
+
+**End of handoff.** This session covered: seed extraction, schema provider decision (sqlite wins), `src/lib/prisma.ts` verification, Prisma 7↔6 version discovery, and rollback planning. Next session: execute rollback, seed DB, test login, then reconstruct `src/app/page.tsx`. 🚀
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 📋 FULL SESSION HANDOFF — Copy entire message to restart
+
+Save as `SESSION_HANDOFF_03.md`. Paste as message 1 in new chat.
+
+---
+
+## 1. User & Project
+
+- **Name:** Okeke Divine-Vessel · **Reg:** 2022514075 · **UNIZIK Final Year B.Sc. CS**
+- **Working dir:** `~/Projects/unizik-ml-project/frontend/`
+- **OS:** Fresh Linux (recovery situation), Node v24.22.1
+- **Topic:** *"Development of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification"*
+- **Source of truth:** `~/Downloads/gemini.md` (~260K lines, 1,044 code fences)
+- **Branding:** Navy `#001C3D` + Orange `#F58220`
+
+---
+
+## 2. 🚨 CRITICAL — Recovered `package.json` (SOURCE OF TRUTH — DO NOT DEVIATE)
+
+This is the **exact recovered** `package.json`. User pasted it and said "we MUST not deviate from our recovery architecture." All version decisions flow from this:
+
+```json
+{
+  "name": "unizik-ml-fraud-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.25.0",
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "prisma": "^6.19.0",
+    "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  }
+}
+```
+
+**Firm decisions (locked):**
+| Thing | Recovered = | NOT |
+|---|---|---|
+| Prisma | **6.19.0** | 7.x, 8.x |
+| Seed runner | **`ts-node`** with `{"module":"CommonJS"}` | `tsx`, `npx` |
+| Tailwind | **v4** → `@import "tailwindcss"` | v3 `@tailwind` directives |
+| Next | **16.2.10** | Next 15 |
+| `datasource.url` | **inside `schema.prisma`** | `prisma.config.ts` (Prisma 7+) |
+| Driver adapter | **none needed** | `@prisma/adapter-better-sqlite3` |
+| `.env` loading | **automatic** | needs `import 'dotenv/config'` |
+
+---
+
+## 3. ⚠️ What Broke This Session (why we rolled back)
+
+Timeline:
+1. Session started with **Prisma 7.10.1 + Prisma 8 RC CLI** (drift)
+2. `npx prisma migrate dev` → **`[CLI.COMMAND_MOVED]`** (Prisma 8 has no `migrate dev`)
+3. Downgraded to `prisma@7` → **`P1012`**: *"datasource url is no longer supported in schema files"*
+4. Attempted Prisma 7 architecture (`prisma.config.ts` + adapter) → **user rejected**: *"we MUST not deviate from our recovery architecture"*
+5. User pasted actual recovered `package.json` → confirmed **Prisma 6**
+6. Full purge + reinstall of exact versions → **succeeded**
+
+**Lesson for next AI:** Do not "helpfully upgrade." Recovered = Prisma 6. Full stop.
+
+**Prisma version behavior matrix:**
+- **v6** — `url` in schema, no adapter, auto-loads `.env`, `migrate dev` works, seed auto-runs on migrate
+- **v7** — `url` in `prisma.config.ts`, driver adapter **required**, needs `dotenv` import, seed only via `db seed`
+- **v8 RC** — complete CLI rewrite (`contract emit` + `migration plan` + `db migrate`) — no `migrate dev`
+
+---
+
+## 4. ✅ Current State (end of session)
+
+### Package versions — VERIFIED CORRECT ✅
+```
+prisma                  : 6.19.0
+@prisma/client          : 6.19.0
+ts-node                 : 10.9.2
+```
+User ran `npx prisma --version` and `npm ls` — both confirmed match.
+
+**Removed successfully:** `prisma@7`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`, `dotenv`, `tsx`, `prisma.config.ts`
+
+### What works ✅
+- `npx prisma generate` — succeeded
+- `npx prisma migrate dev --name init` — **succeeded**, created `prisma/migrations/20261025154749_init/migration.sql` and `prisma/dev.db`
+- DB tables exist (students, admins, fee_invoices, etc. created by migration)
+
+### What's broken ❌
+1. **Seed hook mismatch** — `package.json` still has `tsx prisma/seed.ts` (from earlier accidental install). Must change to `ts-node --compiler-options {"module":"CommonJS"} prisma/seed.ts`
+2. **`sqlite3` CLI not installed** — user got `Command 'sqlite3' not found`, fix: `sudo apt install -y sqlite3`
+3. Seed has NOT run yet → DB has empty tables
+4. Login has NOT been tested yet
+
+### Files on disk — verified state
+| File | Status | Notes |
+|------|--------|-------|
+| `prisma/schema.prisma` | ✅ | sqlite provider, `url = env("DATABASE_URL")` inside datasource, 6 models + 4 enums |
+| `prisma/dev.db` | ✅ | Created by migrate, empty tables |
+| `prisma/migrations/20261025154749_init/migration.sql` | ✅ | Created |
+| `prisma/seed.ts` | ⚠️ | Extracted & saved (~95 lines), but UNVERIFIED — need `wc -l` check |
+| `src/lib/prisma.ts` | ✅ | Standard Prisma 6 singleton (no adapter) |
+| `src/lib/fingerprint.ts` | ✅ | Exports `generateDeviceFingerprint` |
+| `src/lib/fraud-engine.ts` | ✅ | |
+| `src/app/(auth)/login/page.tsx` | ✅ | From prior session |
+| `src/app/api/auth/login/route.ts` | ✅ | Backend done |
+| `public/unizik.png` | ✅ | |
+| `.env` | ✅ | `DATABASE_URL="file:./dev.db"` |
+| `package.json` | ⚠️ | Prisma block has wrong seed runner (`tsx`) — needs fix |
+
+---
+
+## 5. 📄 Final Code — `prisma/seed.ts` (Prisma 6, no adapter)
+
+If `prisma/seed.ts` is missing or wrong, paste this exact block:
+
+```ts
+// prisma/seed.ts
+
+import { PrismaClient, FeeCategory, InvoiceStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Initiating UNIZIK Ledger Seeding Protocol...');
+
+  // 1. Wipe old records
+  await prisma.appeal.deleteMany();
+  await prisma.fraudAuditLog.deleteMany();
+  await prisma.transaction.deleteMany();
+  await prisma.feeInvoice.deleteMany();
+  await prisma.student.deleteMany();
+  await prisma.admin.deleteMany();
+
+  const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+  const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+
+  // 2. Create Admin Account
+  await prisma.admin.create({
+    data: {
+      username: 'admin',
+      password: adminPasswordHash,
+      fullName: 'Dr. Prof. B.O. Ekeh (Chief Bursary Officer)',
+      role: 'BURSARY_DIRECTOR',
+    },
+  });
+
+  // 3. Create Student 1: Normal Undergraduate Profile (Chinedu)
+  const student1 = await prisma.student.create({
+    data: {
+      matricNumber: '2022514001',
+      email: 'c.okafor@unizik.edu.ng',
+      password: defaultPasswordHash,
+      firstName: 'Chinedu',
+      lastName: 'Okafor',
+      department: 'Computer Science',
+      level: 400,
+      loginDeviceId: 'UNIZIK_FP_CLEAN_BASELINE_CHINEDU',
+    },
+  });
+
+  await prisma.feeInvoice.create({
+    data: {
+      studentId: student1.id,
+      category: FeeCategory.TUITION,
+      amount: 85500.00,
+      session: '2025/2026',
+      status: InvoiceStatus.PENDING,
+    },
+  });
+
+  // 4. Create Student 2: High-Risk Attack Target Profile (Sohail)
+  const student2 = await prisma.student.create({
+    data: {
+      matricNumber: '2022514009',
+      email: 'sohail.sec@unizik.edu.ng',
+      password: defaultPasswordHash,
+      firstName: 'Sohail',
+      lastName: 'Abdel',
+      department: 'Computer Science',
+      level: 400,
+      loginDeviceId: 'UNIZIK_FP_ORIGINAL_SOHAIL_LAPTOP',
+    },
+  });
+
+  await prisma.feeInvoice.create({
+    data: {
+      studentId: student2.id,
+      category: FeeCategory.ACCEPTANCE,
+      amount: 45000.00,
+      session: '2025/2026',
+      status: InvoiceStatus.PENDING,
+    },
+  });
+
+  console.log('✅ Seeding Complete! Demo Login Credentials Established:');
+  console.log('----------------------------------------------------------------');
+  console.log('[NORMAL STUDENT] Matric: 2022514001  | Pass: password123');
+  console.log('[ATTACK TARGET]  Matric: 2022514009  | Pass: password123');
+  console.log('[ADMIN COMMAND]  User:   admin        | Pass: admin123');
+  console.log('----------------------------------------------------------------');
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Fatal error during database seeding:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+```
+
+**Seed credentials produced:**
+| Matric | Role | Password |
+|---|---|---|
+| `admin` | `BURSARY_DIRECTOR` | `admin123` |
+| `2022514001` | `STUDENT` | `password123` |
+| `2022514009` | `STUDENT` | `password123` |
+
+---
+
+## 6. 📄 Final Code — `src/lib/prisma.ts` (Prisma 6, no adapter)
+
+```ts
+// src/lib/prisma.ts
+import { PrismaClient } from '@prisma/client';
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log:
+      process.env.NODE_ENV === 'development'
+        ? ['error', 'warn']
+        : ['error'],
+  });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
+export default prisma;
+```
+
+---
+
+## 7. 🎯 IMMEDIATE NEXT STEPS (in new conversation)
+
+Session ended at Step 4 of the "fix two things" list. **Two remaining fixes:**
+
+### Fix 1 — Correct seed hook in `package.json`
+
+User's `package.json` currently has `"seed": "tsx prisma/seed.ts"` — must change to `ts-node`. 
+
+**Action for user:** Open `package.json`, edit the `"prisma"` block to:
+```json
+"prisma": {
+  "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+}
+```
+
+Then verify:
+```bash
+grep -A2 '"prisma"' package.json
+node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('✅ ok')"
+```
+
+### Fix 2 — Install sqlite3 CLI
+
+```bash
+sudo apt install -y sqlite3
+```
+
+### Then continue:
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+# Verify seed.ts exists
+wc -l prisma/seed.ts
+
+# Run seed (now using ts-node)
+npx prisma db seed
+
+# Verify rows
+sqlite3 prisma/dev.db "SELECT matricNumber, firstName, level FROM students;"
+sqlite3 prisma/dev.db "SELECT username, role FROM admins;"
+sqlite3 prisma/dev.db "SELECT category, amount, status FROM fee_invoices;"
+
+# Test login
+npm run dev   # terminal 1
+
+# terminal 2
+curl -i -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"matricNumber":"admin","password":"admin123","deviceId":"fp-test-1","isAdmin":true}'
+
+curl -i -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"matricNumber":"2022514001","password":"password123","deviceId":"fp-test-1","isAdmin":false}'
+```
+
+**Expected seed output:**
+```
+Running seed command `ts-node --compiler-options {"module":"CommonJS"} prisma/seed.ts` ...
+🌱 Initiating UNIZIK Ledger Seeding Protocol...
+✅ Seeding Complete! ...
+[ADMIN COMMAND] User: admin | Pass: admin123
+```
+
+**Expected curl:** `HTTP/1.1 200` + `{"success":true,...}` + `Set-Cookie: unizik_session=...`
+
+---
+
+## 8. ⚠️ Known Warnings (ignore them — don't "fix" them)
+
+| Warning | Why ignore |
+|---|---|
+| `warn The configuration property 'package.json#prisma' is deprecated` | Prisma 6 warning about future Prisma 7 migration. Ignore. |
+| `Update available 6.19.0 -> 8.0.0-rc.27` | **NEVER UPGRADE.** Prisma 8 = broken CLI. |
+| `npm warn install-scripts ... @prisma/engines@6.19.0 (postinstall)` | Engines already loaded successfully — warning is spurious. |
+| `4 high severity vulnerabilities` | Transitive dev deps (likely old eslint). Not urgent for academic project. |
+| `eslint@9.39.5 deprecated` | Npm noise. eslint 9 works fine with Next 16. |
+
+---
+
+## 9. 📋 Files Still To Reconstruct (after seed/login milestone)
+
+| # | File | Priority | grep hint |
+|---|------|----------|-----------|
+| 1 | `src/app/page.tsx` | **HIGH (next)** | `grep -n -B10 -A40 'app/page\.tsx' gemini.md` |
+| 2 | `src/app/layout.tsx` | HIGH | `grep 'app/layout\.tsx'` |
+| 3 | `src/app/globals.css` | HIGH (partial — see §10) | `grep 'globals\.css'` |
+| 4 | `src/components/StudentHeader.tsx` | MED | `grep 'StudentHeader'` |
+| 5 | `src/app/dashboard/page.tsx` | HIGH | `grep 'dashboard/page\.tsx'` |
+| 6 | `src/app/checkout/[invoiceId]/page.tsx` | HIGH | `grep 'checkout.*invoiceId'` |
+| 7 | `src/app/(admin)/admin/transactions/page.tsx` | HIGH | `grep 'admin/transactions/page'` |
+| 8 | `src/app/register/page.tsx` | MED | Found near L149650 in gemini.md |
+| 9 | `src/app/api/auth/register/route.ts` | LOW | L~68808 |
+
+**Already done:** `src/app/(auth)/login/page.tsx`, `src/app/api/auth/login/route.ts`
+
+---
+
+## 10. 🎨 Tailwind 4 Fix (if globals.css errors reappear)
+
+**If user sees `Unknown at rule @tailwindcss` or `Unknown at rule @apply`:**
+
+Edit `src/app/globals.css` — replace any `@tailwind base;` / `@tailwind components;` / `@tailwind utilities;` at the top with:
+
+```css
+@import "tailwindcss";
+```
+
+Verify `postcss.config.mjs`:
+```js
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+export default config;
+```
+
+---
+
+## 11. 🔧 Environment Notes
+
+- **Shell:** bash, user `divine-vessel@divinevessel-HP-EliteBook-8470p`
+- **Node:** v24.22.1 · **TypeScript:** 5.9.3
+- **`npm warn install-scripts not yet covered by allowScripts`** — new npm behavior; ignore. If Prisma engines fail: `npm config set ignore-scripts false`
+- **`grep`, `sed`, `diff`, `python3`** all work
+- **`sqlite3` CLI:** NOT installed — user needs `sudo apt install -y sqlite3`
+- **Bracketed paste:** disabled via `bind 'set enable-bracketed-paste off'` in `.bashrc`
+
+---
+
+## 12. ⚠️ Behavioral Rules (carry forward — non-negotiable)
+
+**Do:**
+- Trust recovered `package.json` — Prisma 6.19, Next 16.2.10, Tailwind 4, **`ts-node` seed runner**
+- Assume `gemini.md` contains the code — mine harder if grep returns empty
+- Output **complete, paste-ready** files — no fragments
+- Preserve exact styling (Navy `#001C3D`, Orange `#F58220`, existing Tailwind classes)
+- Acknowledge corrections instantly
+- **Use `npm install` / `npm uninstall` for package operations** — user explicitly rejected heredoc `cat > package.json` approach. They said "use npm to do it, please... just do this and stop following these complicated ways."
+- One file at a time
+- When user pastes terminal output, read the **actual error** — don't guess
+
+**Don't:**
+- Suggest upgrading Prisma to 7 or 8
+- Add `prisma.config.ts`, driver adapters, or `dotenv`
+- Change provider from `sqlite` to `postgresql`
+- Use `tsx` for seed — recovered uses `ts-node`
+- Use `@tailwind` directives in globals.css
+- Write multi-step heredoc scripts — user wants plain `npm install pkg@version` commands
+- Argue with user's memory of gemini.md
+- Assume removed files are gone — always check disk
+- Paste giant terminal dumps — summarize
+
+---
+
+## 13. 📌 Exact Message to Paste as Message 1 in New Chat
+
+```
+Continuing from SESSION_HANDOFF_03. Project: UNIZIK fraud detection frontend recovery.
+
+LOCKED ARCHITECTURE (do not deviate):
+- Prisma 6.19.0 (NOT 7, NOT 8) — url lives in schema.prisma
+- Seed runner: ts-node with {"module":"CommonJS"} — NOT tsx
+- Tailwind 4 — @import "tailwindcss" — NOT @tailwind directives
+- Next 16.2.10, React 19.2.4
+- Use plain `npm install pkg@ver` commands — no heredocs
+
+CURRENT STATE (verified this session):
+✅ prisma@6.19.0 + @prisma/client@6.19.0 + ts-node@10.9.2 installed
+✅ npx prisma generate — works
+✅ npx prisma migrate dev --name init — SUCCEEDED (migration 20261025154749_init)
+✅ prisma/dev.db exists with tables (empty)
+⚠️ package.json "prisma" block still has wrong seed runner: "tsx prisma/seed.ts" — MUST change to "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+❌ sqlite3 CLI not installed (sudo apt install -y sqlite3)
+❌ Seed has NOT run
+❌ Login has NOT been tested
+
+NEXT ACTION:
+1. Have user fix package.json "prisma" block seed runner from tsx → ts-node
+2. sudo apt install -y sqlite3
+3. npx prisma db seed
+4. Verify with sqlite3 SELECTs
+5. Test login via curl (admin/admin123 and 2022514001/password123)
+6. Once login passes → start src/app/page.tsx reconstruction via grep of gemini.md
+
+Do not upgrade Prisma. Do not use tsx. Do not add adapters. Do not rewrite package.json with heredocs — use npm commands.
+```
+
+---
+
+**End of handoff.** This session: diagnosed Prisma version drift, rolled back from 7/8 to 6.19, ran first migration successfully. Remaining: fix seed hook, run seed, test login, then resume frontend file reconstruction. 🚀
