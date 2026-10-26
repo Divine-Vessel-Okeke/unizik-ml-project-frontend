@@ -199,11 +199,11 @@ export default function StudentDashboard() {
                                 )}
                               </div>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-800 border border-rose-200 px-3 py-1 rounded-full font-sans text-[11px] font-bold shadow-2xs">
-                                <Shield className="w-3.5 h-3.5 text-rose-600" />
-                                <span>SECURITY HOLD</span>
-                              </span>
-                            )
+  <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-800 border border-rose-200 px-3 py-1 rounded-full font-sans text-[11px] font-bold shadow-2xs">
+    <Shield className="w-3.5 h-3.5 text-rose-600" />
+    <span>BLOCKED</span>
+  </span>
+)
                           ) : (
                             <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200/80 px-3 py-1 rounded-full font-sans text-[11px] font-bold shadow-2xs">
                               <Clock className="w-3.5 h-3.5 text-amber-600" />

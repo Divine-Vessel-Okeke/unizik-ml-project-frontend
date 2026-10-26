@@ -30,17 +30,34 @@ function AppealForm() {
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
 
-    // Fetch student's invoices to populate dropdown with BLOCKED obligations
+    // Fetch student's invoices to populate dropdown with ACTIONABLE blocked obligations.
+    // CRITICAL FIX: only show invoices where the student can actually submit an appeal:
+    //   - Blocked (invoice or latest tx)
+    //   - Appeal status is NOT "APPROVED" (already resolved by admin)
+    //   - Appeal status is NOT "PENDING" (already in admin queue — awaiting decision)
     fetch(`/api/invoices?studentId=${parsedUser.id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const blockedInvoices = data.invoices.filter((inv: any) => 
-            inv.status === "BLOCKED" || inv.transactions?.some((tx: any) => tx.status === "BLOCKED")
-          );
+          const blockedInvoices = data.invoices.filter((inv: any) => {
+            const latestTx = inv.transactions?.[0];
+            const appealStatus = latestTx?.appeal?.status;
+            const isActivelyBlocked =
+              (inv.status === "BLOCKED" || latestTx?.status === "BLOCKED") &&
+              appealStatus !== "APPROVED" &&
+              appealStatus !== "PENDING";
+            return isActivelyBlocked;
+          });
           setInvoices(blockedInvoices);
+
+          // Only auto-select the URL param if it's actually actionable
           if (preselectedInvoiceId && !selectedInvoice) {
-            setSelectedInvoice(preselectedInvoiceId);
+            const isActionable = blockedInvoices.some((inv: any) => inv.id === preselectedInvoiceId);
+            if (isActionable) {
+              setSelectedInvoice(preselectedInvoiceId);
+            } else if (blockedInvoices.length > 0) {
+              setSelectedInvoice(blockedInvoices[0].id);
+            }
           } else if (blockedInvoices.length > 0 && !selectedInvoice) {
             setSelectedInvoice(blockedInvoices[0].id);
           }
@@ -111,6 +128,20 @@ function AppealForm() {
             <button
               onClick={() => router.push("/dashboard")}
               className="px-6 py-2.5 bg-[#001C3D] text-white rounded-xl text-xs font-bold cursor-pointer"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        ) : invoices.length === 0 ? (
+          <div className="text-center py-10 space-y-3">
+            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+            <h3 className="font-extrabold text-[#001C3D] text-base">No Appeals Currently Required</h3>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto">
+              All your fee obligations are either cleared, paid, or already under review by the Bursary. There are no security holds requiring action at this time.
+            </p>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="mt-4 px-6 py-2.5 bg-[#001C3D] hover:bg-[#00152e] text-white rounded-xl text-xs font-bold cursor-pointer"
             >
               Return to Dashboard
             </button>

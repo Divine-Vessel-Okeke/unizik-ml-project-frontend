@@ -57,16 +57,22 @@ export async function POST(req: Request) {
     });
 
     if (existingAppeal) {
-      // If it is already sitting in Dr. Ekeh's queue, forbid duplicate submissions
-      if (existingAppeal.status === 'PENDING') {
-        return NextResponse.json({ 
-          success: false, 
-          error: "A verification appeal has already been submitted for this security hold and is currently active in the Chief Bursar's review queue." 
-        }, { status: 400 });
-      }
+  if (existingAppeal.status === 'PENDING') {
+    return NextResponse.json({ 
+      success: false, 
+      error: "A verification appeal has already been submitted for this security hold and is currently active in the Chief Bursar's review queue." 
+    }, { status: 400 });
+  }
 
-      // If it was previously REJECTED, update the existing record with the new excuse instead of crashing!
-      const resubmittedAppeal = await prisma.appeal.update({
+  if (existingAppeal.status === 'APPROVED') {
+    return NextResponse.json({ 
+      success: false, 
+      error: "This security hold has already been cleared by an administrative override. No further appeal is required." 
+    }, { status: 400 });
+  }
+
+  // Only REJECTED reaches this branch — legitimate resubmission
+  const resubmittedAppeal = await prisma.appeal.update({
         where: { transactionId: tx.id },
         data: {
           reason,

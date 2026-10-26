@@ -1,0 +1,2 @@
++ used the normal state and it lead to a failed payment
++ http://localhost:3000/support/appeal?invoiceId=c1adce4b-9f6e-4ca4-a6fd-b13592866bda still shows success modla when i try to submut multiple appeals sussceively
