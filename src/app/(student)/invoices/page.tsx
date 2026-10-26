@@ -129,19 +129,21 @@ export default function InvoiceGeneratorPage() {
 
             {/* Academic Session Selector */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                Academic Session
-              </label>
-              <select
-                value={session}
-                onChange={(e) => setSession(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-sm text-slate-900 font-medium focus:outline-none focus:bg-white focus:border-[#001C3D] focus:ring-2 focus:ring-[#001C3D]/10 transition-all cursor-pointer"
-              >
-                <option value="2025/2026">2025/2026 Academic Session (Current & Active)</option>
-                <option value="2024/2025">2024/2025 Academic Session (Previous Session Archive)</option>
-              </select>
-            </div>
-
+  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+    Academic Session
+  </label>
+  <select
+    value={session}
+    onChange={(e) => setSession(e.target.value)}
+    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-sm text-slate-900 font-medium focus:outline-none focus:bg-white focus:border-[#001C3D] focus:ring-2 focus:ring-[#001C3D]/10 transition-all cursor-pointer"
+  >
+    <option value="2025/2026">2025/2026 Academic Session (Current &amp; Active)</option>
+    <option value="2024/2025">2024/2025 Academic Session (Previous Session Archive)</option>
+    <option value="2023/2024">2023/2024 Academic Session (Historical Record)</option>
+    <option value="2022/2023">2022/2023 Academic Session (Historical Record)</option>
+    <option value="2021/2022">2021/2022 Academic Session (Historical Record)</option>
+  </select>
+</div>
             {/* Fee Category Interactive Cards */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
