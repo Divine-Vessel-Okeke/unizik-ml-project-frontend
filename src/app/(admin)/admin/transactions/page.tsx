@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter, RefreshCw, AlertTriangle, CheckCircle2, XCircle, ArrowUpRight } from "lucide-react";
+import { Search, Filter, RefreshCw, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import AdminHeader from "@/components/AdminHeader";
 import BackButton from "@/components/BackButton";
 
@@ -19,9 +19,10 @@ const FEE_CATEGORIES = [
 const STATUS_OPTIONS = [
   { id: "ALL", label: "All Statuses" },
   { id: "CLEARED", label: "Cleared" },
-  { id: "PENDING", label: "Pending" },
   { id: "BLOCKED", label: "Blocked" },
 ];
+
+const PAGE_SIZE_OPTIONS = [10, 15, 20, 30, 50];
 
 export default function AdminTransactionsPage() {
   const router = useRouter();
@@ -35,17 +36,22 @@ export default function AdminTransactionsPage() {
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
 
-  // pagniation
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [pageSize, setPageSize] = useState(15);
 
-  // 1. Updated fetchLedger to set the total pages state
+  // Fetch ledger
   const fetchLedger = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const queryParams = new URLSearchParams({ page: currentPage.toString() });
+      const queryParams = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+      });
       if (selectedStatus !== "ALL") queryParams.append("status", selectedStatus);
       if (selectedCategory !== "ALL") queryParams.append("category", selectedCategory);
       if (searchTerm.trim() !== "") queryParams.append("search", searchTerm.trim());
@@ -55,7 +61,8 @@ export default function AdminTransactionsPage() {
 
       if (res.ok && data.success) {
         setTransactions(data.transactions);
-        setTotalPages(data.pages); // CRITICAL: Updates the page UI
+        setTotalPages(data.pages);
+        setTotalRecords(data.total || 0);
       } else {
         setError(data.error || "Failed to retrieve records.");
       }
@@ -64,9 +71,8 @@ export default function AdminTransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedStatus, selectedCategory, searchTerm, currentPage]); // Added currentPage dependency
+  }, [selectedStatus, selectedCategory, searchTerm, currentPage, pageSize]);
 
-  // 2. Add this useEffect to trigger fetch when page changes
   useEffect(() => {
     fetchLedger();
   }, [fetchLedger]);
@@ -89,10 +95,16 @@ export default function AdminTransactionsPage() {
     fetchLedger();
   }, [fetchLedger, router]);
 
+  // Reset to page 1 whenever page size or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pageSize, selectedStatus, selectedCategory]);
+
   const handleResetFilters = () => {
     setSearchTerm("");
     setSelectedStatus("ALL");
     setSelectedCategory("ALL");
+    setCurrentPage(1);
   };
 
   // Dynamic Ledger Metrics based on active view
@@ -101,6 +113,10 @@ export default function AdminTransactionsPage() {
     .reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
   const blockedCount = transactions.filter((tx) => tx.status === "BLOCKED").length;
+
+  // Derived "showing X–Y of Z" numbers
+  const showingFrom = transactions.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const showingTo = Math.min(currentPage * pageSize, totalRecords);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16 selection:bg-[#001C3D] selection:text-white">
@@ -318,7 +334,7 @@ export default function AdminTransactionsPage() {
                           </span>
                         </td>
 
-                        {/* action cell */}
+                        {/* Action cell */}
                         <td className="py-4 px-6 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
                             {isSuccess && (
@@ -339,7 +355,6 @@ export default function AdminTransactionsPage() {
                               title="Inspect White-Box AI Forensics"
                             >
                               <span>Forensics</span>
-                              <ArrowUpRight className="w-3 h-3" />
                             </button>
                           </div>
                         </td>
@@ -350,22 +365,54 @@ export default function AdminTransactionsPage() {
               </tbody>
             </table>
 
-            <div className="flex items-center justify-between p-4 border-t border-slate-100">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
-                className="px-4 py-2 border rounded-xl text-xs font-bold disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span className="text-xs font-bold">Page {currentPage} of {totalPages}</span>
-              <button
-                disabled={currentPage === totalPages || totalPages === 0}
-                onClick={() => setCurrentPage(p => p + 1)}
-                className="px-4 py-2 border rounded-xl text-xs font-bold disabled:opacity-50"
-              >
-                Next
-              </button>
+            {/* ═══════════════ PAGINATION FOOTER ═══════════════ */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-slate-100 bg-slate-50/40">
+
+              {/* Left: Showing X–Y of Z + Rows per page */}
+              <div className="flex items-center gap-4 text-xs font-semibold text-slate-600 flex-wrap justify-center sm:justify-start">
+                <span>
+                  Showing{" "}
+                  <span className="font-mono font-extrabold text-[#001C3D]">
+                    {showingFrom}–{showingTo}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-mono font-extrabold text-[#001C3D]">{totalRecords}</span>
+                </span>
+
+                <label className="flex items-center gap-1.5">
+                  <span className="text-slate-400">Rows:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-[#001C3D] cursor-pointer"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>{size}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {/* Right: Page navigation */}
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:border-[#001C3D] hover:text-[#001C3D] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="text-xs font-bold text-slate-600 font-mono px-2">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
+                <button
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:border-[#001C3D] hover:text-[#001C3D] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>

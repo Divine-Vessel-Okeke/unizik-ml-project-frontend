@@ -59,6 +59,13 @@ export default function WhiteBoxForensicsPage({ params }: { params: Promise<{ tx
   const isBlocked = data.status === "BLOCKED" || data.status === "DECLINED" || data.auditLog?.verdict === "FRAUDULENT";
   const confidencePercent = data.auditLog?.confidence ? (data.auditLog.confidence * 100).toFixed(1) : "N/A";
 
+  // TRUTHFUL MISMATCH CHECK: also verify actual fingerprint divergence,
+// so historical transactions with stale hardwareMismatch=0 (from before
+// the BOT preset fix) still display correctly.
+const actualHardwareMismatch =
+  data.hardwareMismatch === 1 ||
+  (data.student?.loginDeviceId && data.deviceId && data.student.loginDeviceId !== data.deviceId);
+  
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16 selection:bg-[#001C3D] selection:text-white">
       <AdminHeader />
@@ -118,16 +125,16 @@ export default function WhiteBoxForensicsPage({ params }: { params: Promise<{ tx
             {/* Checkpoint 1: Hardware Baseline */}
             <div className="relative z-10 flex md:flex-col items-center gap-3.5 md:text-center w-full md:w-1/4">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border-2 font-bold text-xs ${
-                data.hardwareMismatch === 1 
+                actualHardwareMismatch 
                   ? "bg-rose-50 border-rose-500 text-rose-600 shadow-sm shadow-rose-500/10" 
                   : "bg-emerald-50 border-emerald-500 text-emerald-600"
               }`}>
-                {data.hardwareMismatch === 1 ? "✕" : "✓"}
+                {actualHardwareMismatch ? "✕" : "✓"}
               </div>
               <div>
                 <span className="text-[11px] font-extrabold block text-[#001C3D]">1. Hardware Identity</span>
-                <span className={`text-[10px] font-semibold block mt-0.5 ${data.hardwareMismatch === 1 ? "text-rose-600" : "text-slate-500"}`}>
-                  {data.hardwareMismatch === 1 ? "Fingerprint Mismatch" : "Baseline Verified"}
+                <span className={`text-[10px] font-semibold block mt-0.5 ${actualHardwareMismatch ? "text-rose-600" : "text-slate-500"}`}>
+                  {actualHardwareMismatch ? "Fingerprint Mismatch" : "Baseline Verified"}
                 </span>
               </div>
             </div>
@@ -236,9 +243,9 @@ export default function WhiteBoxForensicsPage({ params }: { params: Promise<{ tx
               <div className="flex justify-between items-center py-1 border-b border-slate-50">
                 <span className="text-slate-500 font-medium">Hardware Variance Flag</span>
                 <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
-                  data.hardwareMismatch === 1 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
+                  actualHardwareMismatch ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
                 }`}>
-                  {data.hardwareMismatch === 1 ? "MISMATCH DETECTED" : "VERIFIED HARDWARE"}
+                  {actualHardwareMismatch ? "MISMATCH DETECTED" : "VERIFIED HARDWARE"}
                 </span>
               </div>
             </div>
@@ -298,10 +305,15 @@ export default function WhiteBoxForensicsPage({ params }: { params: Promise<{ tx
             </div>
 
             <div className={`p-3.5 border rounded-xl ${
-              data.hardwareMismatch === 1 ? "bg-rose-50/50 border-rose-200 text-rose-900" : "bg-emerald-50/50 border-emerald-200 text-emerald-900"
+              actualHardwareMismatch ? "bg-rose-50/50 border-rose-200 text-rose-900" : "bg-emerald-50/50 border-emerald-200 text-emerald-900"
             }`}>
               <span className="text-[10px] font-sans font-bold uppercase block mb-1">
                 Transaction Fingerprint (At Payment Attempt)
+                <span className="block text-[10px] font-sans font-normal mt-1 text-slate-500">
+  {data.student?.loginDeviceId === data.deviceId
+    ? "✓ Matches baseline"
+    : `✕ Differs from baseline (${data.student?.loginDeviceId?.substring(0, 20)}...)`}
+</span>
               </span>
               <span className="break-all font-bold">
                 {data.deviceId || "UNKNOWN DEVICE"}

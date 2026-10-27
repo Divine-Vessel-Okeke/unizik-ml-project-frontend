@@ -1,2 +1,4 @@
 + used the normal state and it lead to a failed payment
 + http://localhost:3000/support/appeal?invoiceId=c1adce4b-9f6e-4ca4-a6fd-b13592866bda still shows success modla when i try to submut multiple appeals sussceively
++ ensure the page here is correct and there are no lies (after putitng the the diagoniss panel);
+http://localhost:3000/admin/forensics/0c46150a-73ec-42ee-b543-6c9fe8d104e9

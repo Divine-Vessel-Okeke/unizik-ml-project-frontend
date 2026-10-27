@@ -28,11 +28,14 @@ export async function GET(req: Request) {
         const normalizedWord = word.toUpperCase().replace(/\s+/g, '_');
         const isMatchingEnum = Object.values(FeeCategory).includes(normalizedWord as FeeCategory);
 
+        // NOTE: SQLite does not support Prisma's `mode: 'insensitive'`.
+        // SQLite's LIKE (used by `contains`) is case-insensitive for ASCII by default,
+        // so plain `contains` works fine here.
         const orConditions: any[] = [
-          { reference: { contains: word, mode: 'insensitive' } },
-          { student: { matricNumber: { contains: word, mode: 'insensitive' } } },
-          { student: { firstName: { contains: word, mode: 'insensitive' } } },
-          { student: { lastName: { contains: word, mode: 'insensitive' } } },
+          { reference: { contains: word } },
+          { student: { matricNumber: { contains: word } } },
+          { student: { firstName: { contains: word } } },
+          { student: { lastName: { contains: word } } },
         ];
 
         if (isMatchingEnum) {

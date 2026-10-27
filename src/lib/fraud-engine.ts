@@ -81,17 +81,30 @@ export async function evaluatePaymentTransaction(
     // extreme multi-variable vectors so Python & SQLite record unmistakable fraud.
     // -------------------------------------------------------------------------
     if (payload.simMode === 'BOT') {
-      deviceStudentCount24h = 65; // Massive cybercafe / proxy botnet velocity
-      failedAttempts1h = 14;      // Aggressive credential stuffing failure rate
-      targetDwellTime = 0.12;     // Sub-second automated script execution
-      targetAsn = 1;              // Unverified / VPN datacenter routing
-      offPeakFlag = 1;            // 2:15 AM WAT dead of night
-    } else if (payload.simMode === 'SPOOF') {
+  deviceStudentCount24h = 65; // Massive cybercafe / proxy botnet velocity
+  failedAttempts1h = 14;      // Aggressive credential stuffing failure rate
+  targetDwellTime = 0.12;     // Sub-second automated script execution
+  targetAsn = 1;              // Unverified / VPN datacenter routing
+  targetMismatch = 1;         // BOT sends fake deviceId (UNIZIK_FP_MALICIOUS_BOT_001) — always ≠ baseline
+  offPeakFlag = 1;            // 2:15 AM WAT dead of night
+} else if (payload.simMode === 'SPOOF') {
       deviceStudentCount24h = 24; // Multi-account hardware velocity
       failedAttempts1h = 6;       // Multiple card testing drops
       targetMismatch = 1;         // Complete session hijack / hardware mismatch
       targetAsn = 1;              // Foreign VPN / proxy routing
     }
+
+    console.log("───── FRAUD ENGINE ENTRYPOINT ─────");
+console.log("[FRAUD-ENGINE] Received payload:", JSON.stringify(payload, null, 2));
+console.log("[FRAUD-ENGINE] After simMode overrides:", {
+  simMode: payload.simMode,
+  deviceStudentCount24h,
+  failedAttempts1h,
+  targetDwellTime,
+  targetAsn,
+  targetMismatch,
+  offPeakFlag,
+});
 
     // 3. CONSTRUCT THE ML FEATURE VECTOR
     const mlPayload = {
@@ -208,6 +221,17 @@ export async function evaluatePaymentTransaction(
 
       return txn;
     });
+
+    console.log("[FRAUD-ENGINE] Final ledger write:", {
+  transactionId: createdTransaction.id,
+  status: targetStatus,
+  verdict: aiVerdict,
+  hardwareMismatch: targetMismatch,
+  asnNumber: targetAsn,
+  pageDwellTime: targetDwellTime,
+  isOffPeak: offPeakFlag,
+});
+console.log("────────────────────────────────────");
 
     return {
       success: targetStatus === TransactionStatus.CLEARED,

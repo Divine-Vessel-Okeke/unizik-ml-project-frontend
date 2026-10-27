@@ -76,16 +76,24 @@ export default function AdminDashboard() {
           </div>
 
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Audit Engine Status
-              </span>
-              <Activity className="w-4 h-4 text-emerald-500" />
-            </div>
-            <div className="text-xl font-extrabold text-[#001C3D] mt-2">
-              Active &amp; Monitoring
-            </div>
-          </div>
+  <div className="flex items-center justify-between mb-2">
+    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+      Audit Engine Status
+    </span>
+    <Activity className={`w-4 h-4 ${
+      data.mlHealth?.status === 'ONLINE' ? 'text-emerald-500' :
+      data.mlHealth?.status === 'DEGRADED' ? 'text-amber-500' :
+      'text-rose-500'
+    }`} />
+  </div>
+  <div className="text-xl font-extrabold text-[#001C3D] mt-2">
+    {data.mlHealth?.status === 'ONLINE' ? 'Active & Monitoring' :
+     data.mlHealth?.status === 'DEGRADED' ? 'Model Missing' :
+     data.mlHealth?.status === 'OFFLINE' ? 'AI Service Offline' :
+     data.mlHealth?.status === 'UNKNOWN' ? 'Status Unknown' :
+     'Checking...'}
+  </div>
+</div>
 
         </div>
 

@@ -1,4 +1,4 @@
-// unizik-ml-fraud-frontend/src/app/api/checkout/route.ts
+// src/app/api/checkout/route.ts
 
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
@@ -6,8 +6,6 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { evaluatePaymentTransaction } from '@/lib/fraud-engine';
 
-// Payload schema: Client reports what it can measure (timing, fingerprinting).
-// Server detects what it can prove (IP, ASN/Telco, Location).
 const checkoutSchema = z.object({
   studentId: z.string().uuid(),
   invoiceId: z.string().uuid(),
@@ -24,20 +22,49 @@ const checkoutSchema = z.object({
  * Detects if the user is on a Nigerian Telco (MTN, Glo, Airtel, 9Mobile).
  * If not, flags as high risk (asnNumber = 1).
  */
-async function getNetworkRiskScore(ip: string): Promise<number> {
-  if (ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1" || ip.startsWith("192.168.") || ip.startsWith("::ffff:192.168.")) return 0;
+async function getNetworkRiskScore(rawIp: string): Promise<number> {
+  // CRITICAL: x-forwarded-for can include whitespace, mixed case, IPv4-mapped IPv6 prefixes.
+  // Normalize before comparison — otherwise "::ffff:127.0.0.1 " (trailing space) will NOT match.
+  const ip = (rawIp || '').trim().toLowerCase();
+
+  console.log('[NETWORK] Raw x-forwarded-for:', JSON.stringify(rawIp));
+  console.log('[NETWORK] Normalized IP:', JSON.stringify(ip));
+
+  const isLocalOrPrivate =
+    ip === '127.0.0.1' ||
+    ip === '::1' ||
+    ip === '::ffff:127.0.0.1' ||
+    ip === 'localhost' ||
+    ip.startsWith('192.168.') ||
+    ip.startsWith('::ffff:192.168.') ||
+    ip.startsWith('10.') ||
+    ip.startsWith('::ffff:10.') ||
+    ip.startsWith('172.16.') ||
+    ip.startsWith('::ffff:172.16.');
+
+  if (isLocalOrPrivate) {
+    console.log('[NETWORK] Local/private IP detected → ASN risk = 0 (SAFE)');
+    return 0;
+  }
+
+  console.log('[NETWORK] External IP → querying ip-api.com for:', ip);
 
   try {
     const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,isp,query`);
     const data = await response.json();
 
-    if (data.status !== "success") return 1;
+    if (data.status !== "success") {
+      console.log('[NETWORK] ip-api.com failed → defaulting to HIGH RISK (1)');
+      return 1;
+    }
 
-    const ispName = data.isp.toUpperCase();
+    const ispName = (data.isp || '').toUpperCase();
     const telcos = ["MTN", "GLOBACOM", "AIRTEL", "9MOBILE", "ETISALAT"];
     const isLocalTelco = telcos.some(telco => ispName.includes(telco));
 
-    return isLocalTelco ? 0 : 1;
+    const result = isLocalTelco ? 0 : 1;
+    console.log('[NETWORK] ISP:', ispName, '→ ASN risk =', result, isLocalTelco ? '(local telco)' : '(foreign/unknown)');
+    return result;
   } catch (e) {
     console.error("[NETWORK DETECTION ERROR]", e);
     return 1;
@@ -47,17 +74,22 @@ async function getNetworkRiskScore(ip: string): Promise<number> {
 export async function POST(req: Request) {
   try {
     const headersList = await headers();
-    const rawIp = headersList.get('x-forwarded-for') || '127.0.0.1';
-    const ipAddress = rawIp.split(',')[0];
+    const rawForwarded = headersList.get('x-forwarded-for') || '127.0.0.1';
+    const ipAddress = rawForwarded.split(',')[0];
 
     const body = await req.json();
+    console.log('════════════ CHECKOUT ENTRYPOINT ════════════');
+    console.log('[CHECKOUT] Raw client payload:', JSON.stringify(body, null, 2));
+
     const validation = checkoutSchema.safeParse(body);
 
     if (!validation.success) {
+      console.log('[CHECKOUT] VALIDATION FAILED:', validation.error);
       return NextResponse.json({ success: false, error: "Validation Failed", details: validation.error }, { status: 400 });
     }
 
     const asnNumber = await getNetworkRiskScore(ipAddress);
+    console.log('[CHECKOUT] Detected IP:', ipAddress, '→ ASN:', asnNumber);
 
     const payload = {
       ...validation.data,
@@ -75,6 +107,8 @@ export async function POST(req: Request) {
     }
 
     // 2. DISPATCH TO ML ENGINE
+    console.log('[CHECKOUT] Full payload → fraud-engine:', JSON.stringify(payload, null, 2));
+    console.log('═══════════════════════════════════════════════');
     const engineResult = await evaluatePaymentTransaction(payload);
 
     const tx = await prisma.transaction.upsert({
