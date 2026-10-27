@@ -1,9 +1,9 @@
-// unizik-ml-fraud-frontend/src/components/StudentHeader.tsx
+// src/components/StudentHeader.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, User, LogOut, Cpu } from "lucide-react";
+import { Shield, User, LogOut, LogIn, Cpu } from "lucide-react";
 
 interface StudentHeaderProps {
   user?: {
@@ -16,22 +16,32 @@ interface StudentHeaderProps {
 
 export default function StudentHeader({ user: propUser }: StudentHeaderProps) {
   const router = useRouter();
-  const [user, setUser] = useState<any | null>(propUser || null);
+  const [sessionUser, setSessionUser] = useState<any | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  // Silently read from localStorage if prop wasn't passed directly
+  // Always derive auth state from localStorage — never from prop.
+  // Prop is accepted for backwards compatibility but unused for badge display,
+  // because receipt page passes the invoice's student (even when nobody is logged in).
   useEffect(() => {
-    if (!user) {
-      const storedUser = localStorage.getItem("unizik_user");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+    const storedUser = localStorage.getItem("unizik_user");
+    if (storedUser) {
+      try {
+        setSessionUser(JSON.parse(storedUser));
+      } catch {
+        setSessionUser(null);
       }
+    } else {
+      setSessionUser(null);
     }
-  }, [user]);
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("unizik_user");
     router.push("/login");
   };
+
+  const isLoggedIn = !!sessionUser;
 
   return (
     <>
@@ -47,7 +57,7 @@ export default function StudentHeader({ user: propUser }: StudentHeaderProps) {
           
           {/* Clickable Brand & Logo Section */}
           <div 
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push(isLoggedIn ? "/dashboard" : "/login")}
             className="flex items-center gap-3.5 cursor-pointer group"
           >
             <img 
@@ -72,24 +82,42 @@ export default function StudentHeader({ user: propUser }: StudentHeaderProps) {
             </div>
           </div>
 
-          {/* User Profile & Logout Controls */}
-          <div className="flex items-center gap-3">
-            {user && (
-              <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-100/80 px-3.5 py-2 rounded-xl border border-slate-200/80">
-                <User className="w-3.5 h-3.5 text-[#001C3D]" />
-                <span>{user.name}</span>
-                <span className="text-slate-400 font-mono">({user.matricNumber})</span>
-              </div>
-            )}
-            <button
-              onClick={handleLogout}
-              className="px-3.5 py-2 text-slate-600 hover:text-white hover:bg-rose-600 rounded-xl transition-all duration-200 flex items-center gap-1.5 text-xs font-bold border border-slate-200/80 hover:border-rose-600 shadow-sm"
-              title="Sign Out"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Sign Out</span>
-            </button>
-          </div>
+          {/* User Profile & Auth Controls — rendered only after mount to avoid hydration flash */}
+          {mounted && (
+            <div className="flex items-center gap-3">
+              {isLoggedIn && sessionUser && (
+                <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-100/80 px-3.5 py-2 rounded-xl border border-slate-200/80">
+                  <User className="w-3.5 h-3.5 text-[#001C3D]" />
+                  <span>{sessionUser.name}</span>
+                  {(sessionUser.matricNumber || sessionUser.username) && (
+                    <span className="text-slate-400 font-mono">
+                      ({sessionUser.matricNumber || sessionUser.username})
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {isLoggedIn ? (
+                <button
+                  onClick={handleLogout}
+                  className="px-3.5 py-2 text-slate-600 hover:text-white hover:bg-rose-600 rounded-xl transition-all duration-200 flex items-center gap-1.5 text-xs font-bold border border-slate-200/80 hover:border-rose-600 shadow-sm cursor-pointer"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">Sign Out</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push("/login")}
+                  className="px-4 py-2 text-white bg-[#001C3D] hover:bg-[#00152e] rounded-xl transition-all duration-200 flex items-center gap-1.5 text-xs font-bold shadow-md shadow-blue-950/20 cursor-pointer"
+                  title="Sign In"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-[#F58220]" />
+                  <span>Login</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </header>
     </>

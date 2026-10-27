@@ -7,11 +7,16 @@ import { ShieldAlert, Send, CheckCircle2, AlertCircle, FileText } from "lucide-r
 import StudentHeader from "@/components/StudentHeader";
 import BackButton from "@/components/BackButton";
 
-function AppealForm() {
+// ---------------------------------------------------------------
+// Inner form receives the URL param as prop.
+// Remounts (fresh state) whenever invoiceId changes via the key prop
+// in <AppealFormKeyed>, which prevents the "success screen persists
+// after navigating to a different invoice" bug.
+// ---------------------------------------------------------------
+function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const preselectedInvoiceId = searchParams.get("invoiceId");
-
+  console.log("[APPEAL DEBUG] Form render — preselectedInvoiceId:", preselectedInvoiceId);  // ← ADD THIS
+  
   const [user, setUser] = useState<any | null>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState(preselectedInvoiceId || "");
@@ -30,11 +35,9 @@ function AppealForm() {
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
 
-    // Fetch student's invoices to populate dropdown with ACTIONABLE blocked obligations.
-    // CRITICAL FIX: only show invoices where the student can actually submit an appeal:
-    //   - Blocked (invoice or latest tx)
-    //   - Appeal status is NOT "APPROVED" (already resolved by admin)
-    //   - Appeal status is NOT "PENDING" (already in admin queue — awaiting decision)
+    // Fetch student's invoices; only keep invoices where an appeal is
+    // currently action-able: blocked, and appeal status is neither
+    // PENDING (already in admin queue) nor APPROVED (already resolved).
     fetch(`/api/invoices?studentId=${parsedUser.id}`)
       .then((res) => res.json())
       .then((data) => {
@@ -42,29 +45,21 @@ function AppealForm() {
           const blockedInvoices = data.invoices.filter((inv: any) => {
             const latestTx = inv.transactions?.[0];
             const appealStatus = latestTx?.appeal?.status;
-            const isActivelyBlocked =
+            return (
               (inv.status === "BLOCKED" || latestTx?.status === "BLOCKED") &&
               appealStatus !== "APPROVED" &&
-              appealStatus !== "PENDING";
-            return isActivelyBlocked;
+              appealStatus !== "PENDING"
+            );
           });
           setInvoices(blockedInvoices);
 
-          // Only auto-select the URL param if it's actually actionable
-          if (preselectedInvoiceId && !selectedInvoice) {
-            const isActionable = blockedInvoices.some((inv: any) => inv.id === preselectedInvoiceId);
-            if (isActionable) {
-              setSelectedInvoice(preselectedInvoiceId);
-            } else if (blockedInvoices.length > 0) {
-              setSelectedInvoice(blockedInvoices[0].id);
-            }
-          } else if (blockedInvoices.length > 0 && !selectedInvoice) {
-            setSelectedInvoice(blockedInvoices[0].id);
+          if (!preselectedInvoiceId && blockedInvoices.length > 0) {
+            setSelectedInvoice((prev) => prev || blockedInvoices[0].id);
           }
         }
       })
       .finally(() => setLoading(false));
-  }, [router, preselectedInvoiceId, selectedInvoice]);
+  }, [router, preselectedInvoiceId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,6 +199,19 @@ function AppealForm() {
   );
 }
 
+// ---------------------------------------------------------------
+// Keyed wrapper: reading the URL param here and using it as the key
+// on <AppealForm> forces a remount (state reset) whenever the param
+// changes. Fixes the "success screen from previous submission
+// persists when clicking a different invoice's Request Review".
+// ---------------------------------------------------------------
+function AppealFormKeyed() {
+  const searchParams = useSearchParams();
+  const invoiceId = searchParams.get("invoiceId") || "";
+    console.log("[APPEAL DEBUG] Keyed render — invoiceId:", invoiceId);  // ← ADD THIS
+  return <AppealForm key={invoiceId || "no-param"} preselectedInvoiceId={invoiceId} />;
+}
+
 export default function AppealPage() {
   const [user, setUser] = useState<any | null>(null);
 
@@ -216,7 +224,7 @@ export default function AppealPage() {
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16">
       <StudentHeader user={user} />
       <Suspense fallback={<div className="text-center py-12">Loading portal...</div>}>
-        <AppealForm />
+        <AppealFormKeyed />
       </Suspense>
     </div>
   );
