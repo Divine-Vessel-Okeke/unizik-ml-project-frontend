@@ -1,7 +1,6 @@
 # Predictive Fraud Detection System for University E-Payment Portals (Final Year Project) — Frontend
 
 ## Setup Instructions
-Run these commands in your terminal.
 
 1. **Install dependencies:**
 
