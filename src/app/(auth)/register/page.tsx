@@ -91,17 +91,17 @@ export default function RegisterPage() {
         {/* Brand & Logo Section */}
         <div className="text-center mb-6">
           <div className="flex justify-center items-center mb-3">
-            <img
-              src="/unizik.png"
-              alt="UNIZIK Crest"
-              className="h-14 object-contain"
+            <img 
+              src="/unizik.png" 
+              alt="UNIZIK Crest" 
+              className="h-16 object-contain"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            <div className="hidden flex items-center justify-center w-12 h-12 rounded-2xl bg-[#001C3D] text-white shadow-lg shadow-blue-900/20">
-              <Shield className="w-6 h-6 text-[#F58220]" />
+            <div className="hidden flex items-center justify-center w-14 h-14 rounded-2xl bg-[#001C3D] text-white shadow-lg shadow-blue-900/20">
+              <Shield className="w-8 h-8 text-[#F58220]" />
             </div>
           </div>
           

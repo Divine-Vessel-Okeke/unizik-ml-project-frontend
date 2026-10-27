@@ -45,7 +45,7 @@ export default function AcademicCoverPage() {
         <div className="lg:col-span-7 space-y-6 pl-0 lg:pl-4 border-l-4 border-[#F58220]">
           <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-[#001C3D] bg-blue-50/80 px-3 py-1 rounded-md border border-blue-100">
             <Award className="w-3.5 h-3.5 text-[#F58220]" />
-            <span>B.Sc. Thesis Defense Presentation</span>
+            <span>B.Sc. Project Defense Presentation</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#001C3D] tracking-tight leading-[1.15]">
@@ -53,7 +53,7 @@ export default function AcademicCoverPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed max-w-2xl">
-            A real-time administrative guardrail engineered to detect and intercept financial transaction anomalies while maintaining human-in-the-loop executive override capabilities.
+            A smart security system that checks every payment attempt in real time, blocks suspicious ones before the invoice is marked as cleared, and gives staff a fair way to review blocked students.
           </p>
         </div>
 
@@ -89,7 +89,7 @@ export default function AcademicCoverPage() {
             <div className="flex justify-between items-center py-1 border-t border-slate-100 pt-3">
               <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">Core Architecture</span>
               <span className="font-mono text-slate-600 font-semibold bg-slate-100 px-2 py-0.5 rounded">
-                White-Box ML / SQLite
+                White-Box ML / Python
               </span>
             </div>
           </div>

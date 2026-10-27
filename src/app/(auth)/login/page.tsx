@@ -66,28 +66,16 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8 font-sans selection:bg-[#001C3D] selection:text-white">
-      {/* Academic Research Header Banner */}
-      <div className="max-w-4xl mx-auto w-full text-center border-b border-slate-200/80 pb-6 mb-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/60 text-[#001C3D] text-xs font-semibold uppercase tracking-wider mb-3">
-          <Shield className="w-3.5 h-3.5 text-[#F58220]" />
-          <span>B.Sc. Computer Science Capstone Project</span>
-        </div>
-        <h1 className="text-xs sm:text-sm font-mono text-slate-500 max-w-2xl mx-auto leading-relaxed">
-          &ldquo;Development of a Predictive Fraud Detection System for
-          University E-payment Portals using Decision Tree
-          Classification&rdquo;
-        </h1>
-      </div>
 
       {/* Main Authentication Card */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md my-auto">
         {/* Brand & Logo Section */}
         <div className="text-center mb-6">
           <div className="flex justify-center items-center mb-3">
-            <img
-              src="/unizik.png"
-              alt="Nnamdi Azikiwe University Crest"
-              className="w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-sm"
+            <img 
+              src="/unizik.png" 
+              alt="UNIZIK Crest" 
+              className="h-16 object-contain"
             />
           </div>
 
@@ -120,7 +108,7 @@ export default function LoginPage() {
                   : "text-slate-600 hover:text-[#001C3D] hover:bg-slate-200/50"
               }`}
             >
-              Undergraduate Portal
+              Undergraduate
             </button>
             <button
               type="button"
@@ -134,7 +122,7 @@ export default function LoginPage() {
                   : "text-slate-600 hover:text-[#001C3D] hover:bg-slate-200/50"
               }`}
             >
-              Admin Command
+              Admin
             </button>
           </div>
 
@@ -150,7 +138,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   required
-                  placeholder={isAdmin ? "e.g. admin" : "e.g. 2022/184042"}
+                  placeholder={isAdmin ? "e.g. admin" : "e.g. 2022514001"}
                   value={matricNumber}
                   onChange={(e) => setMatricNumber(e.target.value)}
                   className="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#001C3D] focus:ring-2 focus:ring-[#001C3D]/10 transition-all font-medium"
@@ -213,28 +201,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Live Security Telemetry Sensor Card */}
-          <div className="mt-6 pt-4 border-t border-slate-100">
-            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/60 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Cpu className="w-3 h-3 text-[#001C3D]" />
-                  Active Telemetry Sensor
-                </span>
-              </div>
-              <span className="text-[11px] font-mono font-semibold text-slate-700 truncate max-w-[160px] bg-white px-2 py-0.5 rounded border border-slate-200">
-                {deviceId}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 text-center mt-2 font-mono">
-              SHA-256 browser attributes harvested for real-time decision tree
-              validation.
-            </p>
-          </div>
         </div>
 
         {/* Undergraduate Registration Redirect */}
@@ -251,17 +217,6 @@ export default function LoginPage() {
         )}
       </div>
 
-      {/* Institutional Footer */}
-      <footer className="max-w-4xl mx-auto w-full text-center mt-auto pt-6 text-[11px] text-slate-400 font-medium">
-        <p>
-          &copy; {new Date().getFullYear()} Nnamdi Azikiwe University, Awka.
-          All rights reserved.
-        </p>
-        <p className="mt-0.5 text-slate-400/80 font-mono">
-          Secured by Real-Time Machine Learning Behavioral Analysis &amp;
-          SQLite Transaction Audit Engine.
-        </p>
-      </footer>
     </div>
   );
 }

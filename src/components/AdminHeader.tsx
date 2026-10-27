@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { LogOut, ShieldAlert, LayoutDashboard, FileText, AlertCircle, ShieldCheck, Laptop } from "lucide-react";
+import { LogOut, ShieldAlert, LayoutDashboard, FileText, AlertCircle, Cpu, Laptop } from "lucide-react";
 
 export default function AdminHeader() {
   const router = useRouter();
@@ -44,7 +44,7 @@ export default function AdminHeader() {
     <>
       {/* Top Academic Research Notice Bar */}
       <div className="bg-[#001C3D] text-white px-4 py-1.5 text-center text-[11px] font-medium tracking-wide flex items-center justify-center gap-2">
-        <ShieldCheck className="w-3.5 h-3.5 text-[#F58220] shrink-0" />
+        <Cpu className="w-3.5 h-3.5 text-[#F58220] shrink-0" />
         <span>Predictive Fraud Detection System for University E-payment Portals | OKEKE DIVINE-VESSEL</span>
       </div>
 

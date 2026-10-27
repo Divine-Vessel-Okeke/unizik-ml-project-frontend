@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Laptop, Users, CheckCircle2, AlertTriangle, RefreshCw, Search, ChevronDown, ChevronUp, ShieldCheck, Building } from "lucide-react";
+import { Laptop, Users, CheckCircle2, AlertTriangle, RefreshCw, Search, ChevronDown, ChevronUp, Building } from "lucide-react";
 import AdminHeader from "@/components/AdminHeader";
 import BackButton from "@/components/BackButton";
 
@@ -46,14 +46,15 @@ export default function CampusComputersPage() {
   const filteredComputers = computers.filter((pc) => {
     const query = searchQuery.toLowerCase();
     const matchesId = pc.deviceId.toLowerCase().includes(query);
-    const matchesStudent = pc.studentsList?.some((s: any) => 
-      s.matricNumber.toLowerCase().includes(query) || 
+    const matchesStudent = pc.studentsList?.some((s: any) =>
+      s.matricNumber.toLowerCase().includes(query) ||
       s.name.toLowerCase().includes(query)
     );
     return matchesId || matchesStudent;
   });
 
-  // Calculate summary counts
+  // Summary counts (isSuspicious is computed by the API)
+  const totalSuspicious = computers.filter((c) => c.isSuspicious).length;
   const totalCafes = computers.filter((c) => c.studentCount >= 10).length;
   const totalShared = computers.filter((c) => c.studentCount >= 3 && c.studentCount < 10).length;
   const totalPersonal = computers.filter((c) => c.studentCount < 3).length;
@@ -97,8 +98,29 @@ export default function CampusComputersPage() {
           </div>
         </div>
 
-        {/* Simple Summary Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        {/* Summary Metric Cards — Suspicious first, then classification */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className={`border p-5 rounded-xl shadow-2xs ${
+            totalSuspicious > 0
+              ? "bg-rose-50 border-rose-200/80"
+              : "bg-white border-slate-200/80"
+          }`}>
+            <span className={`text-[11px] font-bold uppercase tracking-wider block ${
+              totalSuspicious > 0 ? "text-rose-700" : "text-slate-400"
+            }`}>
+              Suspicious Devices
+            </span>
+            <div className={`text-2xl font-extrabold mt-1 ${
+              totalSuspicious > 0 ? "text-rose-600" : "text-[#001C3D]"
+            }`}>
+              {totalSuspicious}
+              <span className={`text-xs font-normal ml-1 ${
+                totalSuspicious > 0 ? "text-rose-500" : "text-slate-500"
+              }`}>
+                (Blocked &gt; Cleared)
+              </span>
+            </div>
+          </div>
           <div className="bg-white border border-slate-200/80 p-5 rounded-xl shadow-2xs">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Commercial Cybercafes</span>
             <div className="text-2xl font-extrabold text-[#001C3D] mt-1">{totalCafes} <span className="text-xs font-normal text-slate-500">(10+ Students)</span></div>
@@ -125,7 +147,7 @@ export default function CampusComputersPage() {
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#001C3D] focus:ring-2 focus:ring-[#001C3D]/10 transition-all"
             />
             {searchQuery && (
-              <button 
+              <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
               >
@@ -162,16 +184,14 @@ export default function CampusComputersPage() {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {filteredComputers.map((pc) => {
                     const isExpanded = expandedId === pc.deviceId;
-                    
-                    // Simple, non-alarmist classification rules
+
                     const isCafe = pc.studentCount >= 10;
                     const isShared = pc.studentCount >= 3 && pc.studentCount < 10;
-                    const hasHighDeclines = pc.blockedCount > pc.clearedCount && pc.blockedCount >= 2;
 
                     return (
                       <React.Fragment key={pc.deviceId}>
-                        <tr className={`hover:bg-blue-50/30 transition-colors ${isExpanded ? "bg-blue-50/20" : ""}`}>
-                          
+                        <tr className={`hover:bg-blue-50/30 transition-colors ${isExpanded ? "bg-blue-50/20" : ""} ${pc.isSuspicious ? "bg-rose-50/30" : ""}`}>
+
                           {/* Col 1: Computer ID */}
                           <td className="py-4 px-6 font-mono text-xs font-bold text-[#001C3D]">
                             <div className="flex items-center gap-2">
@@ -191,9 +211,9 @@ export default function CampusComputersPage() {
                             </div>
                           </td>
 
-                          {/* Col 3: Neutral Business Badges (No Fraud alarmism) */}
+                          {/* Col 3: Classification badges */}
                           <td className="py-4 px-6">
-                            {hasHighDeclines ? (
+                            {pc.isSuspicious ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">
                                 <AlertTriangle className="w-3 h-3 text-rose-600" />
                                 <span>High Payment Declines</span>
@@ -230,8 +250,8 @@ export default function CampusComputersPage() {
                             <button
                               onClick={() => toggleExpand(pc.deviceId)}
                               className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all flex items-center gap-1 ml-auto cursor-pointer ${
-                                isExpanded 
-                                  ? "bg-[#001C3D] text-white border-[#001C3D]" 
+                                isExpanded
+                                  ? "bg-[#001C3D] text-white border-[#001C3D]"
                                   : "bg-slate-100/80 text-slate-700 border-slate-200/80 hover:bg-slate-200"
                               }`}
                             >
@@ -256,22 +276,31 @@ export default function CampusComputersPage() {
                                     Total Payment Attempts: {pc.totalAttempts}
                                   </span>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                   {pc.studentsList.map((st: any) => (
-                                    <div key={st.matricNumber} className="p-3 bg-slate-50 rounded-lg border border-slate-200/60 flex items-center justify-between text-xs">
-                                      <div>
-                                        <div className="font-bold text-slate-900">{st.name}</div>
-                                        <div className="text-[11px] font-mono text-slate-500">{st.matricNumber}</div>
-                                        <div className="text-[10px] text-slate-400 truncate max-w-[150px]">{st.department}</div>
+                                    <div key={st.matricNumber} className="p-3 bg-slate-50 rounded-lg border border-slate-200/60 flex items-start justify-between gap-2 text-xs">
+                                      <div className="min-w-0 flex-1">
+                                        <div className="font-bold text-slate-900 truncate">{st.name}</div>
+                                        <div className="text-[11px] font-mono text-slate-500 truncate">{st.matricNumber}</div>
+                                        <div className="text-[10px] text-slate-400 truncate">{st.department}</div>
                                       </div>
-                                      <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
-                                        st.lastStatus === 'CLEARED' || st.lastStatus === 'SUCCESS' 
-                                          ? "bg-emerald-100 text-emerald-800" 
-                                          : "bg-rose-100 text-rose-800"
-                                      }`}>
-                                        {st.lastStatus}
-                                      </span>
+
+                                      {/* Per-student aggregate + latest badge */}
+                                      <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <div className="flex items-center gap-1 text-[10px] font-mono font-extrabold">
+                                          <span className="text-emerald-700">{st.clearedCount} CLEARED</span>
+                                          <span className="text-slate-300">·</span>
+                                          <span className="text-rose-700">{st.blockedCount} BLOCKED</span>
+                                        </div>
+                                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase whitespace-nowrap ${
+                                          st.lastStatus === 'CLEARED' || st.lastStatus === 'SUCCESS'
+                                            ? "bg-emerald-100 text-emerald-800"
+                                            : "bg-rose-100 text-rose-800"
+                                        }`}>
+                                          Latest: {st.lastStatus === 'CLEARED' || st.lastStatus === 'SUCCESS' ? 'Cleared' : 'Blocked'}
+                                        </span>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>

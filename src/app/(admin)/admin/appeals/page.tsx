@@ -48,20 +48,34 @@ export default function AdminAppealsPage() {
 
   const handleAction = async (appealId: string, status: "APPROVED" | "REJECTED") => {
     setActionLoading(appealId);
+    const noteText = `Manual executive override executed by Chief Bursar on ${new Date().toLocaleDateString()}`;
+
     try {
       const res = await fetch("/api/appeals", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          appealId, 
-          status, 
-          adminNotes: `Manual executive override executed by Chief Bursar on ${new Date().toLocaleDateString()}` 
-        })
+        body: JSON.stringify({
+          appealId,
+          status,
+          adminNotes: noteText,
+        }),
       });
+
       if (res.ok) {
-        fetchAppeals();
+        // Optimistic in-place update — no full-table refetch, no flash.
+        // Just mutate the affected appeal; React re-renders only that row.
+        setAppeals((prev) =>
+          prev.map((a) =>
+            a.id === appealId ? { ...a, status, adminNotes: noteText } : a
+          )
+        );
         setExpandedId(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Action failed. Please try again.");
       }
+    } catch {
+      alert("Network error while submitting action.");
     } finally {
       setActionLoading(null);
     }
@@ -69,24 +83,40 @@ export default function AdminAppealsPage() {
 
   const handleRejectSubmit = async () => {
     if (!rejectModal) return;
-    const finalReason = rejectReason.trim() || "Verification failed institutional security audit. Please visit the Bursary desk.";
-    
+    const finalReason =
+      rejectReason.trim() ||
+      "Verification failed institutional security audit. Please visit the Bursary desk.";
+
     setActionLoading(rejectModal.id);
     try {
       const res = await fetch("/api/appeals", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          appealId: rejectModal.id, 
-          status: "REJECTED", 
-          adminNotes: finalReason 
-        })
+        body: JSON.stringify({
+          appealId: rejectModal.id,
+          status: "REJECTED",
+          adminNotes: finalReason,
+        }),
       });
+
       if (res.ok) {
-        fetchAppeals();
+        // Optimistic in-place update — no flash
+        setAppeals((prev) =>
+          prev.map((a) =>
+            a.id === rejectModal.id
+              ? { ...a, status: "REJECTED", adminNotes: finalReason }
+              : a
+          )
+        );
         setRejectModal(null);
         setRejectReason("");
+        setExpandedId(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Rejection failed. Please try again.");
       }
+    } catch {
+      alert("Network error while submitting rejection.");
     } finally {
       setActionLoading(null);
     }
