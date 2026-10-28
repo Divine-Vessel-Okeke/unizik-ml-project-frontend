@@ -136,7 +136,7 @@ export default function StudentDashboard() {
                 <span>Student Billing &amp; Transaction Ledger</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                All invoices are linked to your student profile and monitored by the fraud detection system.
+                All invoices are linked to your student profile.
               </p>
             </div>
           </div>

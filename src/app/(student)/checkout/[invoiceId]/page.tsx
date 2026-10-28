@@ -7,6 +7,7 @@ import { CreditCard, AlertCircle, RefreshCw, Lock, Building2, AlertTriangle, Che
 import { generateDeviceFingerprint } from "@/lib/fingerprint";
 import StudentHeader from "@/components/StudentHeader";
 import BackButton from "@/components/BackButton";
+import DiagnosticsPanel, { DiagnosticsValues } from "@/components/DiagnosticsPanel";
 
 export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: string }> }) {
   const router = useRouter();
@@ -20,11 +21,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
   const [mismatch, setMismatch] = useState(0);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  // High-precision timer for behavioral dwell-time telemetry
+  const [diagValues, setDiagValues] = useState<DiagnosticsValues | null>(null);
+  const [isSimulated, setIsSimulated] = useState(false);
+  const [serverOverrides, setServerOverrides] = useState<Partial<DiagnosticsValues>>({});
+
   const startTime = useRef(performance.now());
 
   useEffect(() => {
-    // 1. Retrieve authenticated student session
     const storedUser = localStorage.getItem("unizik_user");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -33,12 +36,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
       return;
     }
 
-    // 2. Fetch Invoice Details
     fetch(`/api/invoices?studentId=null&invoiceId=${invoiceId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          // Pre-flight guardrail: block screen if latest tx is BLOCKED and no approved appeal
           const latestTx = data.invoice.transactions?.[0];
           const isTxBlocked =
             latestTx &&
@@ -56,14 +57,29 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
       })
       .catch(() => setPaymentError("Network communication error with the central ledger."));
 
-    // 3. Initialize background telemetry
+    // CRITICAL: always set deviceId, even on failure. Panel depends on it.
     const initTelemetry = async () => {
-      const currentFP = await generateDeviceFingerprint();
-      setDeviceId(currentFP);
+      let fp = "";
+      try {
+        fp = await generateDeviceFingerprint();
+      } catch (e) {
+        console.error("[CHECKOUT] Fingerprint failed:", e);
+        fp = "UNIZIK_FP_UNAVAILABLE";
+      }
+      setDeviceId(fp);
 
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        if (parsedUser.loginDeviceId && parsedUser.loginDeviceId !== currentFP) {
+        const baselineFingerprint = parsedUser.loginDeviceId || "(none stored)";
+        const currentFingerprint = fp;
+        const mismatchResult = (parsedUser.loginDeviceId && parsedUser.loginDeviceId !== fp) ? 1 : 0;
+
+        console.log("[HARDWARE MISMATCH] Two params that decide session_hardware_mismatch:");
+        console.log("  baseline (Student.loginDeviceId from login):", baselineFingerprint);
+        console.log("  current  (fingerprint this checkout attempt):", currentFingerprint);
+        console.log("  result session_hardware_mismatch:", mismatchResult);
+
+        if (mismatchResult === 1) {
           setMismatch(1);
         }
       }
@@ -79,10 +95,15 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
     setProcessing(true);
     setPaymentError(null);
 
-    // Live telemetry only — no overrides in Phase 1.
-    // Phase 2 will add the diagnostic panel that can send isSimulated: true
-    // with per-feature overrideFeatures for demonstration purposes.
-    const realDwellTime = (performance.now() - startTime.current) / 1000;
+    const fallbackDwell = (performance.now() - startTime.current) / 1000;
+    const finalValues: DiagnosticsValues = diagValues ?? {
+      device_student_count_24h: 1,
+      page_dwell_time_seconds: fallbackDwell,
+      is_high_risk_asn: 0,
+      failed_attempts_1h: 0,
+      session_hardware_mismatch: mismatch,
+      is_off_peak_hour: 0,
+    };
 
     const payload = {
       studentId: user.id,
@@ -90,9 +111,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
       amount: invoice.amount || 0,
       reference: `PAY_${Date.now().toString(36).toUpperCase()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
       deviceId: deviceId,
-      pageDwellTime: realDwellTime,
-      hardwareMismatch: mismatch,
-      isSimulated: false,
+      pageDwellTime: finalValues.page_dwell_time_seconds,
+      hardwareMismatch: finalValues.session_hardware_mismatch,
+      isSimulated: isSimulated,
+      overrideFeatures: isSimulated && Object.keys(serverOverrides).length > 0
+        ? serverOverrides
+        : undefined,
     };
 
     try {
@@ -261,8 +285,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
               </div>
             </div>
 
-            {/* PHASE 2 will insert the diagnostic panel here. */}
-
             <div className="space-y-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
                 Payment Processing Channel
@@ -324,6 +346,21 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
           </div>
         </div>
       </main>
+
+      {/* Diagnostics panel — renders as soon as user is known, regardless of deviceId */}
+      {user && (
+        <DiagnosticsPanel
+          studentId={user.id}
+          deviceId={deviceId || ""}
+          hardwareMismatch={mismatch}
+          startTime={startTime.current}
+          onValuesChange={(values, simulated, overrides) => {
+            setDiagValues(values);
+            setIsSimulated(simulated);
+            setServerOverrides(overrides);
+          }}
+        />
+      )}
     </div>
   );
 }

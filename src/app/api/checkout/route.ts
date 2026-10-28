@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { evaluatePaymentTransaction } from '@/lib/fraud-engine';
+import { getNetworkRiskScore } from '@/lib/network-risk';   // ← ADD THIS
 
 // Optional per-feature overrides — only honored when isSimulated=true.
 // Bounds mirror the Python model's defensive clamps in model_engine.py.
@@ -29,58 +30,6 @@ const checkoutSchema = z.object({
   isSimulated: z.boolean().optional().default(false),
   overrideFeatures: overrideFeaturesSchema,
 });
-
-/**
- * PRODUCTION NETWORK DETECTOR
- * Detects if the user is on a Nigerian Telco (MTN, Glo, Airtel, 9Mobile).
- * If not, flags as high risk (asnNumber = 1).
- */
-async function getNetworkRiskScore(rawIp: string): Promise<number> {
-  const ip = (rawIp || '').trim().toLowerCase();
-
-  console.log('[NETWORK] Raw x-forwarded-for:', JSON.stringify(rawIp));
-  console.log('[NETWORK] Normalized IP:', JSON.stringify(ip));
-
-  const isLocalOrPrivate =
-    ip === '127.0.0.1' ||
-    ip === '::1' ||
-    ip === '::ffff:127.0.0.1' ||
-    ip === 'localhost' ||
-    ip.startsWith('192.168.') ||
-    ip.startsWith('::ffff:192.168.') ||
-    ip.startsWith('10.') ||
-    ip.startsWith('::ffff:10.') ||
-    ip.startsWith('172.16.') ||
-    ip.startsWith('::ffff:172.16.');
-
-  if (isLocalOrPrivate) {
-    console.log('[NETWORK] Local/private IP detected → ASN risk = 0 (SAFE)');
-    return 0;
-  }
-
-  console.log('[NETWORK] External IP → querying ip-api.com for:', ip);
-
-  try {
-    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,isp,query`);
-    const data = await response.json();
-
-    if (data.status !== "success") {
-      console.log('[NETWORK] ip-api.com failed → defaulting to HIGH RISK (1)');
-      return 1;
-    }
-
-    const ispName = (data.isp || '').toUpperCase();
-    const telcos = ["MTN", "GLOBACOM", "AIRTEL", "9MOBILE", "ETISALAT"];
-    const isLocalTelco = telcos.some(telco => ispName.includes(telco));
-
-    const result = isLocalTelco ? 0 : 1;
-    console.log('[NETWORK] ISP:', ispName, '→ ASN risk =', result, isLocalTelco ? '(local telco)' : '(foreign/unknown)');
-    return result;
-  } catch (e) {
-    console.error("[NETWORK DETECTION ERROR]", e);
-    return 1;
-  }
-}
 
 export async function POST(req: Request) {
   try {
