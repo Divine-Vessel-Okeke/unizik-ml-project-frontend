@@ -7,7 +7,6 @@ import { CreditCard, AlertCircle, RefreshCw, Lock, Building2, AlertTriangle, Che
 import { generateDeviceFingerprint } from "@/lib/fingerprint";
 import StudentHeader from "@/components/StudentHeader";
 import BackButton from "@/components/BackButton";
-import DefenseTelemetrySwitch, { SimulationMode } from "@/components/DefenseTelemetrySwitch";
 
 export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: string }> }) {
   const router = useRouter();
@@ -20,9 +19,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
   const [deviceId, setDeviceId] = useState("");
   const [mismatch, setMismatch] = useState(0);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  
-  // Clean component state for your live defense presentation
-  const [simMode, setSimMode] = useState<SimulationMode>("NORMAL");
 
   // High-precision timer for behavioral dwell-time telemetry
   const startTime = useRef(performance.now());
@@ -42,9 +38,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          // CRITICAL PRE-FLIGHT GUARDRAIL (gemini.md L111985):
-          // Check if the latest transaction attempt on this invoice was BLOCKED.
-          // If blocked AND no APPROVED appeal exists, force the block screen.
+          // Pre-flight guardrail: block screen if latest tx is BLOCKED and no approved appeal
           const latestTx = data.invoice.transactions?.[0];
           const isTxBlocked =
             latestTx &&
@@ -85,27 +79,20 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
     setProcessing(true);
     setPaymentError(null);
 
-    // DETERMINISTIC TELEMETRY INJECTION: Maps your component toggle directly into the API payload
+    // Live telemetry only — no overrides in Phase 1.
+    // Phase 2 will add the diagnostic panel that can send isSimulated: true
+    // with per-feature overrideFeatures for demonstration purposes.
     const realDwellTime = (performance.now() - startTime.current) / 1000;
-    const targetDwellTime = simMode === "BOT" ? 0.12 : realDwellTime;
-    
-    const targetDeviceId = simMode === "BOT" 
-      ? "UNIZIK_FP_MALICIOUS_BOT_001" 
-      : simMode === "SPOOF" 
-      ? "UNIZIK_FP_PROXY_CLUSTER_999" 
-      : deviceId;
-      
-    const targetMismatch = simMode === "SPOOF" ? 1 : mismatch;
 
     const payload = {
       studentId: user.id,
       invoiceId: invoiceId,
       amount: invoice.amount || 0,
       reference: `PAY_${Date.now().toString(36).toUpperCase()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-      deviceId: targetDeviceId,
-      pageDwellTime: targetDwellTime,
-      hardwareMismatch: targetMismatch,
-      simMode: simMode,
+      deviceId: deviceId,
+      pageDwellTime: realDwellTime,
+      hardwareMismatch: mismatch,
+      isSimulated: false,
     };
 
     try {
@@ -226,7 +213,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16 selection:bg-[#001C3D] selection:text-white">
       <StudentHeader user={user} />
-      
+
       <main className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <BackButton />
 
@@ -274,11 +261,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
               </div>
             </div>
 
-            <DefenseTelemetrySwitch 
-              simMode={simMode} 
-              onModeChange={setSimMode} 
-              disabled={processing} 
-            />
+            {/* PHASE 2 will insert the diagnostic panel here. */}
 
             <div className="space-y-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
@@ -331,7 +314,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
                 </>
               )}
             </button>
-            
+
             <div className="text-center">
               <span className="text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />

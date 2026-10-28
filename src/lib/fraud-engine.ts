@@ -10,10 +10,20 @@ export interface PaymentInitiationRequest {
   reference: string;
   deviceId: string;
   ipAddress: string;
-  asnNumber: number; 
-  pageDwellTime: number; 
+  asnNumber: number;
+  pageDwellTime: number;
   hardwareMismatch: number;
-  simMode?: "NORMAL" | "BOT" | "SPOOF";
+  // Data provenance — 'LIVE' when all values were observed; 'SIMULATED' when any were overridden
+  telemetrySource: 'LIVE' | 'SIMULATED' | 'UNSPECIFIED';
+  // Optional per-feature overrides — ONLY honored when telemetrySource === 'SIMULATED'
+  overrideFeatures?: {
+    device_student_count_24h?: number;
+    page_dwell_time_seconds?: number;
+    is_high_risk_asn?: number;
+    failed_attempts_1h?: number;
+    session_hardware_mismatch?: number;
+    is_off_peak_hour?: number;
+  };
 }
 
 export interface FraudEngineResponse {
@@ -24,13 +34,14 @@ export interface FraudEngineResponse {
   verdict: 'LEGITIMATE' | 'FRAUDULENT' | 'SYSTEM_ERROR';
   confidence: number;
   explanation: string;
+  telemetrySource: 'LIVE' | 'SIMULATED' | 'UNSPECIFIED';
 }
 
 function isOffPeakHourWAT(): number {
   const now = new Date();
   const utcHours = now.getUTCHours();
   const utcMinutes = now.getUTCMinutes();
-  
+
   let watHours = utcHours + 1;
   if (watHours >= 24) watHours -= 24;
 
@@ -47,7 +58,7 @@ export async function evaluatePaymentTransaction(
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   try {
-    // 1. STANDARD DATABASE AGGREGATION (Dynamic / Normal Mode)
+    // 1. LIVE DATABASE AGGREGATION (always computed — used as-is in LIVE mode)
     const distinctStudentsOnDevice = await prisma.transaction.findMany({
       where: {
         deviceId: payload.deviceId,
@@ -75,36 +86,32 @@ export async function evaluatePaymentTransaction(
     let targetMismatch = payload.hardwareMismatch;
     let offPeakFlag = isOffPeakHourWAT();
 
-    // -------------------------------------------------------------------------
-    // 2. AGGRESSIVE DEFENSE SIMULATION OVERRIDE (Forced Under-The-Hood Spoofing)
-    // Why: When presenting, we cannot rely on a clean demo DB. We forcibly inject
-    // extreme multi-variable vectors so Python & SQLite record unmistakable fraud.
-    // -------------------------------------------------------------------------
-    if (payload.simMode === 'BOT') {
-  deviceStudentCount24h = 65; // Massive cybercafe / proxy botnet velocity
-  failedAttempts1h = 14;      // Aggressive credential stuffing failure rate
-  targetDwellTime = 0.12;     // Sub-second automated script execution
-  targetAsn = 1;              // Unverified / VPN datacenter routing
-  targetMismatch = 1;         // BOT sends fake deviceId (UNIZIK_FP_MALICIOUS_BOT_001) — always ≠ baseline
-  offPeakFlag = 1;            // 2:15 AM WAT dead of night
-} else if (payload.simMode === 'SPOOF') {
-      deviceStudentCount24h = 24; // Multi-account hardware velocity
-      failedAttempts1h = 6;       // Multiple card testing drops
-      targetMismatch = 1;         // Complete session hijack / hardware mismatch
-      targetAsn = 1;              // Foreign VPN / proxy routing
+    // 2. APPLY EXPLICIT OVERRIDES (only when marked SIMULATED)
+    // No presets, no forced modes — if any values are overridden, the caller
+    // declares that honestly via telemetrySource. Unedited fields stay live.
+    if (payload.telemetrySource === 'SIMULATED' && payload.overrideFeatures) {
+      const o = payload.overrideFeatures;
+      if (o.device_student_count_24h !== undefined) deviceStudentCount24h = o.device_student_count_24h;
+      if (o.page_dwell_time_seconds !== undefined) targetDwellTime = o.page_dwell_time_seconds;
+      if (o.is_high_risk_asn !== undefined) targetAsn = o.is_high_risk_asn;
+      if (o.failed_attempts_1h !== undefined) failedAttempts1h = o.failed_attempts_1h;
+      if (o.session_hardware_mismatch !== undefined) targetMismatch = o.session_hardware_mismatch;
+      if (o.is_off_peak_hour !== undefined) offPeakFlag = o.is_off_peak_hour;
+
+      console.log('[FRAUD-ENGINE] SIMULATED mode — applied overrides:', JSON.stringify(o));
     }
 
     console.log("───── FRAUD ENGINE ENTRYPOINT ─────");
-console.log("[FRAUD-ENGINE] Received payload:", JSON.stringify(payload, null, 2));
-console.log("[FRAUD-ENGINE] After simMode overrides:", {
-  simMode: payload.simMode,
-  deviceStudentCount24h,
-  failedAttempts1h,
-  targetDwellTime,
-  targetAsn,
-  targetMismatch,
-  offPeakFlag,
-});
+    console.log("[FRAUD-ENGINE] Received payload:", JSON.stringify(payload, null, 2));
+    console.log("[FRAUD-ENGINE] Final feature vector:", {
+      telemetrySource: payload.telemetrySource,
+      deviceStudentCount24h,
+      failedAttempts1h,
+      targetDwellTime,
+      targetAsn,
+      targetMismatch,
+      offPeakFlag,
+    });
 
     // 3. CONSTRUCT THE ML FEATURE VECTOR
     const mlPayload = {
@@ -117,7 +124,7 @@ console.log("[FRAUD-ENGINE] After simMode overrides:", {
     };
 
     console.log("--------------------------------------------------");
-    console.log(`[TELEMETRY (${payload.simMode || 'NORMAL'})] Sending 6-param vector to Python AI:`);
+    console.log(`[TELEMETRY (${payload.telemetrySource})] Sending 6-param vector to Python AI:`);
     console.log(JSON.stringify(mlPayload, null, 2));
     console.log("--------------------------------------------------");
 
@@ -156,29 +163,18 @@ console.log("[FRAUD-ENGINE] After simMode overrides:", {
     } catch (mlError: any) {
       console.error('[FRAUD ENGINE WARNING] AI Microservice unreachable. Engaging heuristic safety net:', mlError.message);
       isErrorFallback = true;
-      
-      if (failedAttempts1h >= 9 || (targetMismatch === 1 && targetAsn === 1) || payload.simMode !== 'NORMAL') {
+
+      // Fallback uses only real signals — no "forced" fraud from simulation flags.
+      // If the AI is down and the telemetry does not actually look fraudulent,
+      // we do NOT fabricate a FRAUDULENT verdict.
+      if (failedAttempts1h >= 9 || (targetMismatch === 1 && targetAsn === 1)) {
         aiVerdict = 'FRAUDULENT';
         aiConfidence = 0.9999;
         aiExplanation = 'BLOCKED BY FALLBACK HEURISTIC: High failure rate or session hijack detected while AI service was offline.';
       }
     }
 
-    // -------------------------------------------------------------------------
-    // 5. THESIS DEFENSE SAFETY GUARDRAIL (Absolute Presentation Guarantee)
-    // If the presenter selected BOT or SPOOF, but a poorly trained Python model
-    // STILL returned LEGITIMATE, we forcibly override it to FRAUDULENT so your demo never fails!
-    // -------------------------------------------------------------------------
-    if (payload.simMode && payload.simMode !== 'NORMAL' && aiVerdict === 'LEGITIMATE') {
-      console.warn("[DEFENSE GUARDRAIL] Python returned LEGITIMATE on an attack vector. Overriding to FRAUDULENT for live demo certainty!");
-      aiVerdict = 'FRAUDULENT';
-      aiConfidence = payload.simMode === 'BOT' ? 0.9985 : 0.9840;
-      aiExplanation = payload.simMode === 'BOT'
-        ? 'Automated Fraud Engine: Intercepted high-velocity script execution (0.12s dwell time) originating from an unverified ASN with 14 failed attempts in 1h.'
-        : 'Automated Fraud Engine: Detected critical hardware fingerprint mismatch (session spoofing) across 24 associated accounts on an unverified routing node.';
-    }
-
-    // 6. ATOMIC LEDGER EXECUTION
+    // 5. ATOMIC LEDGER EXECUTION
     const targetStatus: TransactionStatus =
       aiVerdict === 'FRAUDULENT' ? TransactionStatus.BLOCKED : TransactionStatus.CLEARED;
 
@@ -196,6 +192,7 @@ console.log("[FRAUD-ENGINE] After simMode overrides:", {
           pageDwellTime: targetDwellTime,
           isOffPeak: offPeakFlag,
           hardwareMismatch: targetMismatch,
+          telemetrySource: payload.telemetrySource as any,
         },
       });
 
@@ -223,15 +220,16 @@ console.log("[FRAUD-ENGINE] After simMode overrides:", {
     });
 
     console.log("[FRAUD-ENGINE] Final ledger write:", {
-  transactionId: createdTransaction.id,
-  status: targetStatus,
-  verdict: aiVerdict,
-  hardwareMismatch: targetMismatch,
-  asnNumber: targetAsn,
-  pageDwellTime: targetDwellTime,
-  isOffPeak: offPeakFlag,
-});
-console.log("────────────────────────────────────");
+      transactionId: createdTransaction.id,
+      status: targetStatus,
+      verdict: aiVerdict,
+      telemetrySource: payload.telemetrySource,
+      hardwareMismatch: targetMismatch,
+      asnNumber: targetAsn,
+      pageDwellTime: targetDwellTime,
+      isOffPeak: offPeakFlag,
+    });
+    console.log("────────────────────────────────────");
 
     return {
       success: targetStatus === TransactionStatus.CLEARED,
@@ -241,6 +239,7 @@ console.log("──────────────────────�
       verdict: isErrorFallback && aiVerdict === 'LEGITIMATE' ? 'SYSTEM_ERROR' : (aiVerdict as any),
       confidence: aiConfidence,
       explanation: aiExplanation,
+      telemetrySource: payload.telemetrySource,
     };
   } catch (error: any) {
     console.error('[FATAL LEDGER ERROR] Transaction processing failed:', error.message);

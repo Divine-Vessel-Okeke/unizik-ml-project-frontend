@@ -6,6 +6,17 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { evaluatePaymentTransaction } from '@/lib/fraud-engine';
 
+// Optional per-feature overrides — only honored when isSimulated=true.
+// Bounds mirror the Python model's defensive clamps in model_engine.py.
+const overrideFeaturesSchema = z.object({
+  device_student_count_24h: z.number().int().min(0).max(150).optional(),
+  page_dwell_time_seconds: z.number().min(0.1).max(180).optional(),
+  is_high_risk_asn: z.number().int().min(0).max(1).optional(),
+  failed_attempts_1h: z.number().int().min(0).max(20).optional(),
+  session_hardware_mismatch: z.number().int().min(0).max(1).optional(),
+  is_off_peak_hour: z.number().int().min(0).max(1).optional(),
+}).optional();
+
 const checkoutSchema = z.object({
   studentId: z.string().uuid(),
   invoiceId: z.string().uuid(),
@@ -14,7 +25,9 @@ const checkoutSchema = z.object({
   deviceId: z.string().min(8),
   pageDwellTime: z.number().positive(),
   hardwareMismatch: z.number().int().min(0).max(1),
-  simMode: z.enum(["NORMAL", "BOT", "SPOOF"]).optional().default("NORMAL"),
+  // NEW: replaces simMode. Declares whether telemetry was observed or overridden.
+  isSimulated: z.boolean().optional().default(false),
+  overrideFeatures: overrideFeaturesSchema,
 });
 
 /**
@@ -23,8 +36,6 @@ const checkoutSchema = z.object({
  * If not, flags as high risk (asnNumber = 1).
  */
 async function getNetworkRiskScore(rawIp: string): Promise<number> {
-  // CRITICAL: x-forwarded-for can include whitespace, mixed case, IPv4-mapped IPv6 prefixes.
-  // Normalize before comparison — otherwise "::ffff:127.0.0.1 " (trailing space) will NOT match.
   const ip = (rawIp || '').trim().toLowerCase();
 
   console.log('[NETWORK] Raw x-forwarded-for:', JSON.stringify(rawIp));
@@ -91,10 +102,15 @@ export async function POST(req: Request) {
     const asnNumber = await getNetworkRiskScore(ipAddress);
     console.log('[CHECKOUT] Detected IP:', ipAddress, '→ ASN:', asnNumber);
 
+    const telemetrySource = validation.data.isSimulated ? 'SIMULATED' : 'LIVE';
+    console.log('[CHECKOUT] Telemetry source:', telemetrySource,
+      validation.data.isSimulated ? '(overrides present)' : '(live observation)');
+
     const payload = {
       ...validation.data,
       ipAddress,
       asnNumber,
+      telemetrySource,
     };
 
     // 1. FINANCIAL INTEGRITY GUARDRAIL
@@ -124,6 +140,7 @@ export async function POST(req: Request) {
         asnNumber: payload.asnNumber,
         pageDwellTime: payload.pageDwellTime,
         hardwareMismatch: payload.hardwareMismatch,
+        telemetrySource: telemetrySource as any,
         status: engineResult.verdict === 'FRAUDULENT' ? 'BLOCKED' : 'CLEARED'
       }
     });

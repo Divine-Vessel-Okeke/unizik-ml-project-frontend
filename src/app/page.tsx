@@ -45,7 +45,7 @@ export default function AcademicCoverPage() {
         <div className="lg:col-span-7 space-y-6 pl-0 lg:pl-4 border-l-4 border-[#F58220]">
           <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-[#001C3D] bg-blue-50/80 px-3 py-1 rounded-md border border-blue-100">
             <Award className="w-3.5 h-3.5 text-[#F58220]" />
-            <span>B.Sc. Project Defense Presentation</span>
+            <span>B.Sc. Project Defense</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#001C3D] tracking-tight leading-[1.15]">
@@ -53,7 +53,7 @@ export default function AcademicCoverPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed max-w-2xl">
-            A smart security system that checks every payment attempt in real time, blocks suspicious ones before the invoice is marked as cleared, and gives staff a fair way to review blocked students.
+            A predictive fraud detection system that checks every payment attempt and blocks suspicious ones before the invoice is marked as cleared, and gives admin a fair way to review blocked-student appeals and restore their invoice for payment.
           </p>
         </div>
 
@@ -72,7 +72,7 @@ export default function AcademicCoverPage() {
 
           <div className="space-y-4 text-xs relative z-10">
             <div className="flex justify-between items-center py-1">
-              <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">Researcher</span>
+              <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">Student</span>
               <span className="font-extrabold text-[#001C3D] text-sm font-mono">Okeke Divine-Vessel</span>
             </div>
             
@@ -89,7 +89,7 @@ export default function AcademicCoverPage() {
             <div className="flex justify-between items-center py-1 border-t border-slate-100 pt-3">
               <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">Core Architecture</span>
               <span className="font-mono text-slate-600 font-semibold bg-slate-100 px-2 py-0.5 rounded">
-                White-Box ML / Python
+                Python (Decision Tree) & Next.js (Frontend)
               </span>
             </div>
           </div>
@@ -99,8 +99,7 @@ export default function AcademicCoverPage() {
               onClick={() => router.push("/login")}
               className="w-full py-4 px-6 bg-[#001C3D] hover:bg-[#00152e] active:scale-[0.99] text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-950/20 transition-all duration-200 flex items-center justify-between cursor-pointer group"
             >
-              <span>Launch Live Portal</span>
-              <ArrowUpRight className="w-4 h-4 text-[#F58220] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              <span>Login</span>
             </button>
           </div>
         </div>
@@ -110,7 +109,6 @@ export default function AcademicCoverPage() {
       {/* Minimalist Footer */}
       <footer className="border-t border-slate-200/80 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] font-medium text-slate-400 gap-2 font-mono">
         <span>NNAMDI AZIKIWE UNIVERSITY &bull; DEPARTMENT OF COMPUTER SCIENCE</span>
-        <span>SYSTEM DEFENSE &bull; VERSION 1.0</span>
       </footer>
 
     </div>

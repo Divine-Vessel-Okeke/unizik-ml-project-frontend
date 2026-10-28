@@ -37,6 +37,12 @@ enum AppealStatus {
   REJECTED
 }
 
+enum TelemetrySource {
+  UNSPECIFIED
+  LIVE
+  SIMULATED
+}
+
 model Student {
   id             String          @id @default(uuid())
   matricNumber   String          @unique @map("matric_number")
@@ -104,6 +110,9 @@ model Transaction {
   isOffPeak        Int               @default(0) @map("is_off_peak")
   hardwareMismatch Int               @default(0) @map("hardware_mismatch")
 
+  // Data provenance — distinguishes real observed telemetry from demonstration overrides
+  telemetrySource  TelemetrySource   @default(UNSPECIFIED) @map("telemetry_source")
+
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
 
@@ -116,6 +125,7 @@ model Transaction {
   @@index([deviceId, createdAt])
   @@index([studentId, status, createdAt])
   @@index([deviceId, studentId, createdAt])
+  @@index([telemetrySource, createdAt])
   @@map("transactions")
 }
 
