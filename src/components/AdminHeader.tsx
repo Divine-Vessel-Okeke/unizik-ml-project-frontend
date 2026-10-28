@@ -45,7 +45,7 @@ export default function AdminHeader() {
       {/* Top Academic Research Notice Bar */}
       <div className="bg-[#001C3D] text-white px-4 py-1.5 text-center text-[11px] font-medium tracking-wide flex items-center justify-center gap-2">
         <Cpu className="w-3.5 h-3.5 text-[#F58220] shrink-0" />
-        <span>Predictive Fraud Detection System for University E-payment Portals | OKEKE DIVINE-VESSEL</span>
+        <span>Design and Implementation of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification | OKEKE DIVINE-VESSEL</span>
       </div>
 
       <header className="bg-white border-b border-slate-200/80 sticky top-0 z-20 shadow-2xs">

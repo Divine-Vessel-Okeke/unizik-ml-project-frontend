@@ -51,7 +51,7 @@ export default function StudentDashboard() {
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center text-slate-600 font-sans">
         <div className="w-8 h-8 border-3 border-[#001C3D]/20 border-t-[#001C3D] rounded-full animate-spin mb-3" />
         <span className="text-sm font-semibold tracking-wide text-[#001C3D]">
-          Synchronizing Academic Ledger &amp; Security Guardrails...
+          Loading...
         </span>
       </div>
     );
@@ -75,7 +75,7 @@ export default function StudentDashboard() {
             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-0 opacity-50 pointer-events-none" />
             <div className="relative z-10">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Academic Standing
+                Department
               </span>
               <div className="text-lg font-extrabold text-[#001C3D] truncate mt-1">
                 {user.department}
@@ -98,14 +98,14 @@ export default function StudentDashboard() {
             </div>
             <div className="text-[11px] font-semibold text-slate-500 mt-4 flex items-center gap-1.5 border-t border-slate-100 pt-3">
               <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>Verified in Bursary records</span>
+              <span>Calculated from DB</span>
             </div>
           </div>
 
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Pending Obligations
+                Payable Invoices
               </span>
               <div className="text-2xl sm:text-3xl font-extrabold text-[#F58220] font-mono tracking-tight mt-1">
                 {pendingCount} Invoice{pendingCount !== 1 ? "s" : ""} Due
@@ -133,10 +133,10 @@ export default function StudentDashboard() {
             <div>
               <h2 className="text-base font-extrabold text-[#001C3D] flex items-center gap-2">
                 <FileText className="w-4 h-4 text-[#F58220]" />
-                <span>Student Billing &amp; Transaction Ledger</span>
+                <span>Student Fee Invoices</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                All invoices are linked to your student profile.
+                All invoices are linked to your student account.
               </p>
             </div>
           </div>
@@ -152,8 +152,8 @@ export default function StudentDashboard() {
                   <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                     <th className="py-3.5 px-6">Fee Category</th>
                     <th className="py-3.5 px-6">Academic Session</th>
-                    <th className="py-3.5 px-6">Amount Due</th>
-                    <th className="py-3.5 px-6">Payment Status</th>
+                    <th className="py-3.5 px-6">Amount</th>
+                    <th className="py-3.5 px-6">Status</th>
                     <th className="py-3.5 px-6 text-right">Action</th>
                   </tr>
                 </thead>
@@ -177,13 +177,13 @@ export default function StudentDashboard() {
                           {isPaid ? (
                             <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full font-sans text-[11px] font-bold shadow-2xs">
                               <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>PAID &amp; CLEARED</span>
+                              <span>PAID</span>
                             </span>
                           ) : isActivelyBlocked ? (
                             appealStatus === "PENDING" ? (
                               <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1 rounded-full font-sans text-[11px] font-bold shadow-2xs">
                                 <Clock className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
-                                <span>REVIEW PENDING</span>
+                                <span>UNDER REVIEW</span>
                               </span>
                             ) : appealStatus === "REJECTED" ? (
                               <div className="flex flex-col items-start gap-1.5">
@@ -207,7 +207,7 @@ export default function StudentDashboard() {
                           ) : (
                             <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200/80 px-3 py-1 rounded-full font-sans text-[11px] font-bold shadow-2xs">
                               <Clock className="w-3.5 h-3.5 text-amber-600" />
-                              <span>PENDING CLEARANCE</span>
+                              <span>PENDING</span>
                             </span>
                           )}
                         </td>

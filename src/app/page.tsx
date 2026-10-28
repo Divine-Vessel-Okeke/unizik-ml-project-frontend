@@ -4,6 +4,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Shield, ArrowUpRight, GraduationCap, Award, BookOpen } from "lucide-react";
+import {metadata_description} from "@/lib/config"
 
 export default function AcademicCoverPage() {
   const router = useRouter();
@@ -49,11 +50,11 @@ export default function AcademicCoverPage() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#001C3D] tracking-tight leading-[1.15]">
-            Development of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification
+            Design and Implementation of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed max-w-2xl">
-            A predictive fraud detection system that checks every payment attempt and blocks suspicious ones before the invoice is marked as cleared, and gives admin a fair way to review blocked-student appeals and restore their invoice for payment.
+            {metadata_description}
           </p>
         </div>
 
@@ -62,11 +63,9 @@ export default function AcademicCoverPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-full pointer-events-none" />
           
           <div className="border-b border-slate-100 pb-4 relative z-10">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#F58220] block font-mono">
-              Presentation Metadata
-            </span>
+            
             <h3 className="text-lg font-extrabold text-[#001C3D] mt-0.5">
-              Project Defense Brief
+              Project Details
             </h3>
           </div>
 
@@ -87,9 +86,9 @@ export default function AcademicCoverPage() {
             </div>
 
             <div className="flex justify-between items-center py-1 border-t border-slate-100 pt-3">
-              <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">Core Architecture</span>
+              <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">Tech Stack</span>
               <span className="font-mono text-slate-600 font-semibold bg-slate-100 px-2 py-0.5 rounded">
-                Python (Decision Tree) & Next.js (Frontend)
+                Python · Flask · scikit-learn · Next.js · Prisma · SQLite
               </span>
             </div>
           </div>

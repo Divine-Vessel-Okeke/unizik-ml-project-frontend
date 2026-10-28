@@ -1,10 +1,5 @@
 // src/lib/network-risk.ts
 
-/**
- * Detects if an IP is on a Nigerian telco (MTN, Glo, Airtel, 9Mobile).
- * Returns 0 for local/private IPs and Nigerian telcos, 1 for foreign/unknown.
- * Used by both /api/checkout (commit-time detection) and /api/telemetry (diagnostic).
- */
 export async function getNetworkRiskScore(rawIp: string): Promise<number> {
   const ip = (rawIp || '').trim().toLowerCase();
 
@@ -30,13 +25,24 @@ export async function getNetworkRiskScore(rawIp: string): Promise<number> {
 
   console.log('[NETWORK] External IP → querying ip-api.com for:', ip);
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+
   try {
-    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,isp,query`);
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,isp,query`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
     const data = await response.json();
 
     if (data.status !== "success") {
-      console.log('[NETWORK] ip-api.com failed → defaulting to HIGH RISK (1)');
-      return 1;
+      // NO FALLBACK — throw so checkout returns 503, no false signal written
+      throw new Error(`ip-api.com returned status "${data.status}"${data.message ? ` (${data.message})` : ''}`);
     }
 
     const ispName = (data.isp || '').toUpperCase();
@@ -46,8 +52,9 @@ export async function getNetworkRiskScore(rawIp: string): Promise<number> {
     const result = isLocalTelco ? 0 : 1;
     console.log('[NETWORK] ISP:', ispName, '→ ASN risk =', result, isLocalTelco ? '(local telco)' : '(foreign/unknown)');
     return result;
-  } catch (e) {
-    console.error("[NETWORK DETECTION ERROR]", e);
-    return 1;
+  } catch (e: any) {
+    clearTimeout(timeoutId);
+    console.error('[NETWORK DETECTION FAILED]', e.message);
+    throw new Error(`NETWORK_LOOKUP_UNAVAILABLE: ${e.message}`);
   }
 }

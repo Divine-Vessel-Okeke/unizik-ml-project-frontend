@@ -87,8 +87,8 @@ export default function LoginPage() {
           </p>
           <p className="text-sm text-slate-600 mt-2 font-medium">
             {isAdmin
-              ? "Bursary & ICT Administrative Command"
-              : "Student Fee Payment & Financial Portal"}
+              ? "Admin Login"
+              : "Student Login"} {"(Prototype)"}
           </p>
         </div>
 
@@ -192,8 +192,8 @@ export default function LoginPage() {
                 <>
                   <span>
                     {isAdmin
-                      ? "Authorize Admin Access"
-                      : "Secure Student Login"}
+                      ? "Admin Login"
+                      : "Student Login"}
                   </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
@@ -206,12 +206,12 @@ export default function LoginPage() {
         {/* Undergraduate Registration Redirect */}
         {!isAdmin && (
           <p className="mt-6 text-center text-xs text-slate-600 font-medium animate-in fade-in duration-300">
-            Don&apos;t have a student profile yet?{" "}
+            Don&apos;t have a student account yet?{" "}
             <a
               href="/register"
               className="text-[#001C3D] hover:text-[#F58220] font-bold hover:underline transition-colors cursor-pointer"
             >
-              Register New Undergraduate Profile
+              Register Here
             </a>
           </p>
         )}

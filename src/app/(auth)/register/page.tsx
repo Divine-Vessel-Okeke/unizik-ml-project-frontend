@@ -109,10 +109,10 @@ export default function RegisterPage() {
             NNAMDI AZIKIWE UNIVERSITY
           </h1>
           <p className="text-[11px] font-bold uppercase tracking-widest text-[#F58220] mt-0.5">
-            Undergraduate Onboarding Portal
+            Undergraduate Registration
           </p>
           <p className="text-xs text-slate-600 mt-1.5 font-medium">
-            Create your verifiable student profile to access fee invoicing and secure checkout gateways.
+            Create your student account {"(Prototype)"}.
           </p>
         </div>
 
@@ -125,7 +125,7 @@ export default function RegisterPage() {
                 <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-lg font-extrabold text-[#001C3D]">Profile Created Successfully</h3>
+                <h3 className="text-lg font-extrabold text-[#001C3D]">Account Created Successfully</h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto font-medium">
                   Redirecting to login...
                 </p>
@@ -204,7 +204,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    University Email
+                    Email
                   </label>
                   <div className="relative rounded-xl shadow-2xs">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -227,7 +227,7 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    Department / Faculty
+                    Department
                   </label>
                   <div className="relative rounded-xl shadow-2xs">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -274,7 +274,7 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    Create Password
+                    Password
                   </label>
                   <div className="relative rounded-xl shadow-2xs">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -330,11 +330,11 @@ export default function RegisterPage() {
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Registering Academic Profile...</span>
+                    <span>Creating...</span>
                   </div>
                 ) : (
                   <>
-                    <span>Complete Undergraduate Onboarding</span>
+                    <span>Create Account</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -357,7 +357,7 @@ export default function RegisterPage() {
 
         {/* Login Redirect */}
         <p className="mt-5 text-center text-xs text-slate-600 font-medium">
-          Already have an active student account?{" "}
+          Already have a student account?{" "}
           <a href="/login" className="text-[#001C3D] hover:text-[#F58220] font-bold hover:underline transition-colors cursor-pointer">
             Login Here
           </a>

@@ -13,9 +13,7 @@ export interface PaymentInitiationRequest {
   asnNumber: number;
   pageDwellTime: number;
   hardwareMismatch: number;
-  // Data provenance — 'LIVE' when all values were observed; 'SIMULATED' when any were overridden
   telemetrySource: 'LIVE' | 'SIMULATED' | 'UNSPECIFIED';
-  // Optional per-feature overrides — ONLY honored when telemetrySource === 'SIMULATED'
   overrideFeatures?: {
     device_student_count_24h?: number;
     page_dwell_time_seconds?: number;
@@ -31,7 +29,7 @@ export interface FraudEngineResponse {
   transactionId: string;
   reference: string;
   status: TransactionStatus;
-  verdict: 'LEGITIMATE' | 'FRAUDULENT' | 'SYSTEM_ERROR';
+  verdict: 'LEGITIMATE' | 'FRAUDULENT';
   confidence: number;
   explanation: string;
   telemetrySource: 'LIVE' | 'SIMULATED' | 'UNSPECIFIED';
@@ -58,7 +56,7 @@ export async function evaluatePaymentTransaction(
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   try {
-    // 1. LIVE DATABASE AGGREGATION (always computed — used as-is in LIVE mode)
+    // 1. LIVE DATABASE AGGREGATION
     const distinctStudentsOnDevice = await prisma.transaction.findMany({
       where: {
         deviceId: payload.deviceId,
@@ -87,8 +85,6 @@ export async function evaluatePaymentTransaction(
     let offPeakFlag = isOffPeakHourWAT();
 
     // 2. APPLY EXPLICIT OVERRIDES (only when marked SIMULATED)
-    // No presets, no forced modes — if any values are overridden, the caller
-    // declares that honestly via telemetrySource. Unedited fields stay live.
     if (payload.telemetrySource === 'SIMULATED' && payload.overrideFeatures) {
       const o = payload.overrideFeatures;
       if (o.device_student_count_24h !== undefined) deviceStudentCount24h = o.device_student_count_24h;
@@ -128,12 +124,11 @@ export async function evaluatePaymentTransaction(
     console.log(JSON.stringify(mlPayload, null, 2));
     console.log("--------------------------------------------------");
 
-    // 4. DISPATCH TO PYTHON FLASK MICROSERVICE
+    // 4. DISPATCH TO PYTHON FLASK MICROSERVICE — NO FALLBACK
     const mlEndpoint = process.env.ML_ENGINE_URL || 'http://127.0.0.1:5000/api/predict';
-    let aiVerdict = 'LEGITIMATE';
-    let aiConfidence = 1.0;
-    let aiExplanation = 'Transaction parameters align with normal campus student behavioral distributions.';
-    let isErrorFallback = false;
+    let aiVerdict: 'LEGITIMATE' | 'FRAUDULENT';
+    let aiConfidence: number;
+    let aiExplanation: string;
 
     try {
       const controller = new AbortController();
@@ -148,30 +143,26 @@ export async function evaluatePaymentTransaction(
 
       clearTimeout(timeoutId);
 
-      if (response.ok) {
-        const mlResult = await response.json();
-        if (mlResult.status === 'success') {
-          aiVerdict = mlResult.verdict;
-          aiConfidence = mlResult.confidence;
-          aiExplanation = mlResult.explanation;
-        } else {
-          throw new Error(mlResult.message || 'AI engine returned non-success status.');
-        }
-      } else {
+      if (!response.ok) {
         throw new Error(`AI engine responded with HTTP ${response.status}`);
       }
-    } catch (mlError: any) {
-      console.error('[FRAUD ENGINE WARNING] AI Microservice unreachable. Engaging heuristic safety net:', mlError.message);
-      isErrorFallback = true;
 
-      // Fallback uses only real signals — no "forced" fraud from simulation flags.
-      // If the AI is down and the telemetry does not actually look fraudulent,
-      // we do NOT fabricate a FRAUDULENT verdict.
-      if (failedAttempts1h >= 9 || (targetMismatch === 1 && targetAsn === 1)) {
-        aiVerdict = 'FRAUDULENT';
-        aiConfidence = 0.9999;
-        aiExplanation = 'BLOCKED BY FALLBACK HEURISTIC: High failure rate or session hijack detected while AI service was offline.';
+      const mlResult = await response.json();
+
+      if (mlResult.status !== 'success') {
+        throw new Error(mlResult.message || 'AI engine returned non-success status.');
       }
+
+      if (mlResult.verdict !== 'LEGITIMATE' && mlResult.verdict !== 'FRAUDULENT') {
+        throw new Error(`AI engine returned invalid verdict: ${mlResult.verdict}`);
+      }
+
+      aiVerdict = mlResult.verdict;
+      aiConfidence = mlResult.confidence;
+      aiExplanation = mlResult.explanation;
+    } catch (mlError: any) {
+      console.error('[FRAUD ENGINE] AI Microservice unavailable:', mlError.message);
+      throw new Error(`AI_ENGINE_UNAVAILABLE: ${mlError.message}`);
     }
 
     // 5. ATOMIC LEDGER EXECUTION
@@ -203,8 +194,8 @@ export async function evaluatePaymentTransaction(
             studentId: payload.studentId,
             prediction: 1,
             confidence: aiConfidence,
-            verdict: aiVerdict,
             explanation: aiExplanation,
+            verdict: aiVerdict,
           },
         });
       }
@@ -236,13 +227,13 @@ export async function evaluatePaymentTransaction(
       transactionId: createdTransaction.id,
       reference: createdTransaction.reference,
       status: createdTransaction.status,
-      verdict: isErrorFallback && aiVerdict === 'LEGITIMATE' ? 'SYSTEM_ERROR' : (aiVerdict as any),
+      verdict: aiVerdict,
       confidence: aiConfidence,
       explanation: aiExplanation,
       telemetrySource: payload.telemetrySource,
     };
   } catch (error: any) {
-    console.error('[FATAL LEDGER ERROR] Transaction processing failed:', error.message);
-    throw new Error(`Payment processing failed: ${error.message}`);
+    console.error('[FRAUD ENGINE FATAL] Transaction processing failed:', error.message);
+    throw error;
   }
 }

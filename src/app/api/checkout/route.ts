@@ -5,10 +5,8 @@ import { headers } from 'next/headers';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { evaluatePaymentTransaction } from '@/lib/fraud-engine';
-import { getNetworkRiskScore } from '@/lib/network-risk';   // ← ADD THIS
+import { getNetworkRiskScore } from '@/lib/network-risk';
 
-// Optional per-feature overrides — only honored when isSimulated=true.
-// Bounds mirror the Python model's defensive clamps in model_engine.py.
 const overrideFeaturesSchema = z.object({
   device_student_count_24h: z.number().int().min(0).max(150).optional(),
   page_dwell_time_seconds: z.number().min(0.1).max(180).optional(),
@@ -26,7 +24,6 @@ const checkoutSchema = z.object({
   deviceId: z.string().min(8),
   pageDwellTime: z.number().positive(),
   hardwareMismatch: z.number().int().min(0).max(1),
-  // NEW: replaces simMode. Declares whether telemetry was observed or overridden.
   isSimulated: z.boolean().optional().default(false),
   overrideFeatures: overrideFeaturesSchema,
 });
@@ -38,22 +35,14 @@ export async function POST(req: Request) {
     const ipAddress = rawForwarded.split(',')[0];
 
     const body = await req.json();
-    console.log('════════════ CHECKOUT ENTRYPOINT ════════════');
-    console.log('[CHECKOUT] Raw client payload:', JSON.stringify(body, null, 2));
-
     const validation = checkoutSchema.safeParse(body);
 
     if (!validation.success) {
-      console.log('[CHECKOUT] VALIDATION FAILED:', validation.error);
       return NextResponse.json({ success: false, error: "Validation Failed", details: validation.error }, { status: 400 });
     }
 
     const asnNumber = await getNetworkRiskScore(ipAddress);
-    console.log('[CHECKOUT] Detected IP:', ipAddress, '→ ASN:', asnNumber);
-
     const telemetrySource = validation.data.isSimulated ? 'SIMULATED' : 'LIVE';
-    console.log('[CHECKOUT] Telemetry source:', telemetrySource,
-      validation.data.isSimulated ? '(overrides present)' : '(live observation)');
 
     const payload = {
       ...validation.data,
@@ -62,7 +51,6 @@ export async function POST(req: Request) {
       telemetrySource,
     };
 
-    // 1. FINANCIAL INTEGRITY GUARDRAIL
     const invoice = await prisma.feeInvoice.findUnique({ where: { id: payload.invoiceId } });
     if (!invoice || invoice.studentId !== payload.studentId || invoice.amount !== payload.amount) {
       return NextResponse.json({ success: false, error: "Invalid or Tampered Invoice" }, { status: 403 });
@@ -71,9 +59,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "This fee invoice has already been cleared and marked as PAID in the university records." }, { status: 400 });
     }
 
-    // 2. DISPATCH TO ML ENGINE
-    console.log('[CHECKOUT] Full payload → fraud-engine:', JSON.stringify(payload, null, 2));
-    console.log('═══════════════════════════════════════════════');
     const engineResult = await evaluatePaymentTransaction(payload);
 
     const tx = await prisma.transaction.upsert({
@@ -106,6 +91,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "Authorized", data: { id: tx.id } }, { status: 200 });
   } catch (error: any) {
     console.error("[CHECKOUT ROUTE ERROR]:", error.message);
+
+    // AI service was unreachable — do NOT touch the DB, return 503 so student retries
+    if (error.message?.startsWith('AI_ENGINE_UNAVAILABLE')) {
+      return NextResponse.json({
+        success: false,
+        error: "AI verification service is currently unavailable. No payment was processed. Please retry in a moment."
+      }, { status: 503 });
+    }
+
+    // Network intelligence service unreachable
+    if (error.message?.startsWith('NETWORK_LOOKUP_UNAVAILABLE')) {
+      return NextResponse.json({
+        success: false,
+        error: "Network verification service is currently unavailable. No payment was processed. Please retry in a moment."
+      }, { status: 503 });
+    }
+
     return NextResponse.json({ success: false, error: "Internal Error" }, { status: 500 });
   }
 }
