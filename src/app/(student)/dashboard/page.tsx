@@ -96,10 +96,6 @@ export default function StudentDashboard() {
                 ₦{totalPaid.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
               </div>
             </div>
-            <div className="text-[11px] font-semibold text-slate-500 mt-4 flex items-center gap-1.5 border-t border-slate-100 pt-3">
-              <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>Calculated from DB</span>
-            </div>
           </div>
 
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between">

@@ -39,13 +39,13 @@ const FEATURE_META: {
   {
     key: 'is_high_risk_asn',
     label: 'High-risk ASN (VPN / datacenter)',
-    hint: '0 = local Nigerian telco, 1 = foreign or anonymized network',
+    hint: '0 = major Nigerian mobile carrier, 1 = anything else',
     type: 'binary', min: 0, max: 1, step: 1,
   },
   {
     key: 'failed_attempts_1h',
     label: 'Failed attempts (past hour)',
-    hint: 'Blocked or failed transactions on this student or device',
+    hint: 'Recent blocked attempts from this student or device',
     type: 'int', min: 0, max: 20, step: 1,
   },
   {
@@ -57,7 +57,7 @@ const FEATURE_META: {
   {
     key: 'is_off_peak_hour',
     label: 'Off-peak hour (1:00–4:30 AM WAT)',
-    hint: '0 = normal hours, 1 = high-risk late-night window',
+    hint: '0 = normal hours, 1 = high-risk early-morning window',
     type: 'binary', min: 0, max: 1, step: 1,
   },
 ];
@@ -267,7 +267,7 @@ export default function DiagnosticsPanel({
                         {isEdited && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-amber-200 text-amber-900">
                             <Lock className="w-2 h-2" />
-                            Override
+                            SIMULATED
                           </span>
                         )}
                       </div>

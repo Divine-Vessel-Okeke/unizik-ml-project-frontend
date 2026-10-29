@@ -77,7 +77,7 @@ export default function StudentHeader({ user: propUser }: StudentHeaderProps) {
                 NNAMDI AZIKIWE UNIVERSITY
               </span>
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#F58220] block mt-0.5">
-                Undergraduate Financial Hub
+                Undergraduate
               </span>
             </div>
           </div>

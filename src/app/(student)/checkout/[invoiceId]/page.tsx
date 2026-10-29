@@ -175,7 +175,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
             </div>
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-left space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Fee Category:</span>
+                <span className="text-slate-500 font-medium">Category:</span>
                 <span className="font-bold text-[#001C3D]">{invoice.category.replace("_", " ")}</span>
               </div>
               <div className="flex justify-between">
@@ -244,10 +244,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
           <div className="bg-[#001C3D] p-6 text-white flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#F58220] block mb-0.5">
-                Central Bursary Gateway
-              </span>
-              <h1 className="text-lg font-extrabold tracking-tight">Payment Authorization</h1>
+              <h1 className="text-lg font-extrabold tracking-tight">Checkout {"(Prototype)"}</h1>
             </div>
             <div className="p-2.5 bg-white/10 rounded-xl border border-white/15">
               <Building2 className="w-6 h-6 text-[#F58220]" />
@@ -278,33 +275,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
                 <span className="font-semibold text-slate-700 font-mono">{invoice.session}</span>
               </div>
               <div className="p-4 bg-blue-50/40 flex justify-between items-center border-t border-slate-100">
-                <span className="font-bold text-slate-700">Total Amount Due</span>
+                <span className="font-bold text-slate-700">Total Amount</span>
                 <span className="text-lg font-extrabold text-[#001C3D] font-mono">
                   ₦{invoice.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                Payment Processing Channel
-              </span>
-              <div className="p-3.5 border border-slate-200 rounded-xl flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs">
-                    <CreditCard className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-xs text-slate-800 block">
-                      Institutional E-Payment Gateway
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-medium">
-                      Remita / Paystack Educational Channel
-                    </span>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                  ACTIVE
                 </span>
               </div>
             </div>
@@ -332,17 +305,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
               ) : (
                 <>
                   <Lock className="w-4 h-4" />
-                  <span>Complete Payment (₦{invoice.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })})</span>
+                  <span>Complete Checkout (₦{invoice.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })})</span>
                 </>
               )}
             </button>
 
-            <div className="text-center">
-              <span className="text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Encrypted transaction verified by central university records.</span>
-              </span>
-            </div>
           </div>
         </div>
       </main>

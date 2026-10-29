@@ -1,10 +1,10 @@
-// unizik-ml-fraud-frontend/src/app/page.tsx
+// src/app/page.tsx
 "use client";
 
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Shield, ArrowUpRight, GraduationCap, Award, BookOpen } from "lucide-react";
-import {metadata_description} from "@/lib/config"
+import {project_summary} from "@/lib/config"
 
 export default function AcademicCoverPage() {
   const router = useRouter();
@@ -54,7 +54,7 @@ export default function AcademicCoverPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed max-w-2xl">
-            {metadata_description}
+            {project_summary}
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-// unizik-ml-fraud-frontend/src/lib/fraud-engine.ts
+// src/lib/fraud-engine.ts
 
 import { prisma } from './prisma';
 import { TransactionStatus } from '@prisma/client';

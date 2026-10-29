@@ -1,23 +1,36 @@
-// unizik-ml-fraud-frontend/src/app/(auth)/login/page.tsx
+// src/app/(auth)/login/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, Lock, User, ArrowRight, AlertCircle, Cpu } from "lucide-react";
+import { Lock, User, ArrowRight, AlertCircle } from "lucide-react";
 import { generateDeviceFingerprint } from "@/lib/fingerprint";
+
+const ADMIN_ROLES = [
+  "BURSARY_OFFICER",
+  "BURSARY_DIRECTOR",
+  "ICT_DIRECTOR",
+  "AUDIT_OFFICER",
+];
 
 export default function LoginPage() {
   const router = useRouter();
   const [matricNumber, setMatricNumber] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
-  const [deviceId, setDeviceId] = useState("HARVESTING_FINGERPRINT...");
+  const [deviceId, setDeviceId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Harvest hardware fingerprint silently on mount
+  // Generate device fingerprint on mount; sent to server with login request
   useEffect(() => {
-    generateDeviceFingerprint().then((fp) => setDeviceId(fp));
+    generateDeviceFingerprint()
+      .then((fp) => setDeviceId(fp))
+      .catch(() => {
+        console.error("[LOGIN] An error occurred during fingerprint generation.");
+        setDeviceId("UNIZIK_FP_UNAVAILABLE");
+      });
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -29,36 +42,37 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matricNumber, password, deviceId, isAdmin }),
+        body: JSON.stringify({
+          ...(isAdmin ? { username } : { matricNumber }),
+          password,
+          deviceId,
+          isAdmin,
+        }),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        // RUTHLESS FIX: Explicitly embed the role into the localStorage object
-        // so it can never be undefined on subsequent pages.
-        const userProfile = {
-          ...data.user,
-          role:
-            data.role ||
-            data.user?.role ||
-            (isAdmin ? "BURSARY_DIRECTOR" : "STUDENT"),
-        };
+        const serverRole = data.role;
+        if (!serverRole) {
+          setError("An error occurred.");
+          return;
+        }
+
+        const userProfile = { ...data.user, role: serverRole };
         localStorage.setItem("unizik_user", JSON.stringify(userProfile));
 
-        // Redirect to appropriate domain
-        if (
-          userProfile.role === "ADMIN" ||
-          userProfile.role === "BURSARY_DIRECTOR"
-        ) {
+        if (serverRole === "STUDENT") {
+          router.push("/dashboard");
+        } else if (ADMIN_ROLES.includes(serverRole)) {
           router.push("/admin/dashboard");
         } else {
-          router.push("/dashboard");
+          setError("An error occurred.");
         }
       } else {
-        setError(data.error || "Login attempt failed.");
+        setError(data.error || "An error occurred.");
       }
     } catch (err) {
-      setError("Unable to connect to authentication server.");
+      setError("An error occurred.");
     } finally {
       setLoading(false);
     }
@@ -72,9 +86,9 @@ export default function LoginPage() {
         {/* Brand & Logo Section */}
         <div className="text-center mb-6">
           <div className="flex justify-center items-center mb-3">
-            <img 
-              src="/unizik.png" 
-              alt="UNIZIK Crest" 
+            <img
+              src="/unizik.png"
+              alt="UNIZIK Crest"
               className="h-16 object-contain"
             />
           </div>
@@ -86,15 +100,12 @@ export default function LoginPage() {
             Awka, Anambra State
           </p>
           <p className="text-sm text-slate-600 mt-2 font-medium">
-            {isAdmin
-              ? "Admin Login"
-              : "Student Login"} {"(Prototype)"}
+            {isAdmin ? "Admin Login" : "Student Login"} {"(Prototype)"}
           </p>
         </div>
 
-        {/* Vercel-Style Glass Card Container */}
+        {/* White Card Container */}
         <div className="bg-white border border-slate-200/80 py-8 px-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl sm:px-10 relative">
-          {/* Vercel/Stripe Mode Pill Switcher */}
           <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/80 mb-6">
             <button
               type="button"
@@ -139,8 +150,12 @@ export default function LoginPage() {
                   type="text"
                   required
                   placeholder={isAdmin ? "e.g. admin" : "e.g. 2022514001"}
-                  value={matricNumber}
-                  onChange={(e) => setMatricNumber(e.target.value)}
+                  value={isAdmin ? username : matricNumber}
+                  onChange={(e) =>
+                    isAdmin
+                      ? setUsername(e.target.value)
+                      : setMatricNumber(e.target.value)
+                  }
                   className="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#001C3D] focus:ring-2 focus:ring-[#001C3D]/10 transition-all font-medium"
                 />
               </div>
@@ -176,7 +191,7 @@ export default function LoginPage() {
             {/* Action Button anchored to UNIZIK Brand Palette */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !deviceId}
               className={`w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.99] ${
                 isAdmin
                   ? "bg-[#F58220] hover:bg-[#d97016] shadow-orange-500/20"
@@ -186,15 +201,11 @@ export default function LoginPage() {
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Verifying Hardware &amp; Credentials...</span>
+                  <span>Loading ...</span>
                 </div>
               ) : (
                 <>
-                  <span>
-                    {isAdmin
-                      ? "Admin Login"
-                      : "Student Login"}
-                  </span>
+                  <span>{isAdmin ? "Admin Login" : "Student Login"}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

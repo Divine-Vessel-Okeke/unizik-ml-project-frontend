@@ -1,1 +1,1 @@
-export const metadata_description = "A predictive fraud detection system that checks every checkout attempt and blocks suspicious ones before the invoice is marked as cleared, and gives admin a fair way to review blocked-invoice appeals and restore their invoice for payment."
+export const project_summary = "A predictive fraud detection system that checks every checkout attempt and blocks suspicious ones before the invoice is marked as cleared, and gives admin a fair way to review blocked-invoice appeals and restore their invoice for payment."

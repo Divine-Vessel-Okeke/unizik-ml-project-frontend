@@ -23,7 +23,7 @@ Save this as `CONTEXT_HANDOFF.md` on your machine. When you start the new chat, 
 - **ML:** Python, `scikit-learn` `DecisionTreeClassifier` (backend, already recovered)
 - **Auth:** JWT session cookies + SHA-256 hardware fingerprint (`src/lib/fingerprint.ts`)
 - **Color palette:** UNIZIK Navy `#001C3D` + Amber/Orange `#F58220`
-- **Backup original path in Gemini convos:** `unizik-ml-fraud-frontend/` (old path, new is `frontend/`)
+- **Backup original path in Gemini convos:** `` (old path, new is `frontend/`)
 
 ---
 
@@ -406,7 +406,7 @@ grep -nE 'prisma/seed\.ts|seed\.ts.*PrismaClient|defaultPasswordHash' gemini.md 
 For schema, they already have the latest one at various lines. Let me find where the LAST schema is:
 bash
 
-grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma' gemini.md
+grep -nE '// prisma/schema\.prisma' gemini.md
 
 From earlier scan, this appears at:
 
@@ -470,7 +470,7 @@ For schema (find last emission):
 bash
 
 cd ~/Downloads
-grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma' gemini.md | tail -5
+grep -nE '// prisma/schema\.prisma' gemini.md | tail -5
 
 Also need to check if schema was emitted with // prisma/schema.prisma or other headers.
 
@@ -532,7 +532,7 @@ cd ~/Downloads
 grep -nE 'prisma/seed\.ts|seed\.ts.*PrismaClient|PrismaClient.*seed' gemini.md | grep -vE 'You said' | head -30
 
 # 2. Find all schema.prisma emissions
-grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma|^\s*//\s*prisma/schema\.prisma' gemini.md | tail -10
+grep -nE '// prisma/schema\.prisma|^\s*//\s*prisma/schema\.prisma' gemini.md | tail -10
 
 # 3. Find any schema.prisma without path prefix (bare header)
 grep -nE 'generator client \{|datasource db \{' gemini.md | head -20
@@ -648,7 +648,7 @@ bash
 cd ~/Downloads
 
 echo "=== All schema.prisma emissions ==="
-grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma|^\s*//\s*prisma/schema\.prisma' gemini.md \
+grep -nE '// prisma/schema\.prisma|^\s*//\s*prisma/schema\.prisma' gemini.md \
   | grep -vE 'You said|user-query'
 
 echo ""
@@ -802,12 +802,12 @@ grep -nE 'prisma\.(student|admin)\.upsert|await prisma\.\$disconnect' gemini.md 
 149629:    await prisma.\$disconnect();
 
 === explicit prisma/seed.ts path headers ===
-64402:// unizik-ml-fraud-frontend/prisma/seed.ts
-68508:// unizik-ml-fraud-frontend/prisma/seed.ts
-89024:// unizik-ml-fraud-frontend/prisma/seed.ts
-106499:// unizik-ml-fraud-frontend/prisma/seed.ts
-132656:// unizik-ml-fraud-frontend/prisma/seed.ts
-149436:// unizik-ml-fraud-frontend/prisma/seed.ts
+64402:// prisma/seed.ts
+68508:// prisma/seed.ts
+89024:// prisma/seed.ts
+106499:// prisma/seed.ts
+132656:// prisma/seed.ts
+149436:// prisma/seed.ts
 
 === PrismaClient seed context (upsert blocks) ===
 64479:    await prisma.$disconnect();
@@ -817,7 +817,7 @@ grep -nE 'prisma\.(student|admin)\.upsert|await prisma\.\$disconnect' gemini.md 
 divine-vessel@divinevessel-HP-EliteBook-8470p:~/Downloads$ cd ~/Downloads
 
 echo "=== All schema.prisma emissions ==="
-grep -nE '// unizik-ml-fraud-frontend/prisma/schema\.prisma|^\s*//\s*prisma/schema\.prisma' gemini.md \
+grep -nE '// prisma/schema\.prisma|^\s*//\s*prisma/schema\.prisma' gemini.md \
   | grep -vE 'You said|user-query'
 
 echo ""
@@ -825,23 +825,23 @@ echo "=== Bare generator/datasource headers (schema without path comment) ==="
 grep -nE '^generator client \{|^datasource db \{|generator client \{' gemini.md \
   | grep -vE 'You said|user-query'
 === All schema.prisma emissions ===
-61210:// unizik-ml-fraud-frontend/prisma/schema.prisma
-61748:// unizik-ml-fraud-frontend/prisma/schema.prisma
-62319:// unizik-ml-fraud-frontend/prisma/schema.prisma
-68167:// unizik-ml-fraud-frontend/prisma/schema.prisma
-101377:// unizik-ml-fraud-frontend/prisma/schema.prisma
-106700:  // unizik-ml-fraud-frontend/prisma/schema.prisma
-107696:// unizik-ml-fraud-frontend/prisma/schema.prisma
-112951:// unizik-ml-fraud-frontend/prisma/schema.prisma
-115936:// unizik-ml-fraud-frontend/prisma/schema.prisma
-125381:// unizik-ml-fraud-frontend/prisma/schema.prisma
-131198:// unizik-ml-fraud-frontend/prisma/schema.prisma
-135034:// unizik-ml-fraud-frontend/prisma/schema.prisma
-137280:// unizik-ml-fraud-frontend/prisma/schema.prisma
-142770:// unizik-ml-fraud-frontend/prisma/schema.prisma
-149104:// unizik-ml-fraud-frontend/prisma/schema.prisma
-165837:// unizik-ml-fraud-frontend/prisma/schema.prisma
-235419:// unizik-ml-fraud-frontend/prisma/schema.prisma
+61210:// prisma/schema.prisma
+61748:// prisma/schema.prisma
+62319:// prisma/schema.prisma
+68167:// prisma/schema.prisma
+101377:// prisma/schema.prisma
+106700:  // prisma/schema.prisma
+107696:// prisma/schema.prisma
+112951:// prisma/schema.prisma
+115936:// prisma/schema.prisma
+125381:// prisma/schema.prisma
+131198:// prisma/schema.prisma
+135034:// prisma/schema.prisma
+137280:// prisma/schema.prisma
+142770:// prisma/schema.prisma
+149104:// prisma/schema.prisma
+165837:// prisma/schema.prisma
+235419:// prisma/schema.prisma
 
 === Bare generator/datasource headers (schema without path comment) ===
 61212:generator client {
@@ -919,7 +919,7 @@ You are taking over a **code-recovery project** for a final-year CS student at N
 - **Database:** SQLite (`file:./dev.db`), provider is `sqlite` in `prisma/schema.prisma`
 - **Approved project topic:** *"Development of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification"*
 - **Project brand colors:** Navy `#001C3D`, Orange `#F58220`
-- **Old Gemini path prefix:** `unizik-ml-fraud-frontend/src/...` — new filesystem path is `frontend/src/...` (just drop the `unizik-ml-fraud-frontend/`)
+- **Old Gemini path prefix:** `src/...` — new filesystem path is `frontend/src/...` (just drop the ``)
 - **User's mental model (correct):** *"gemini.md is a linear timeline. Final state = last complete emission + every patch after it, applied in order."*
 - **User tools:** `grep`, `sed`, `python3` — all working. `grep` had a transient PATH issue once; re-check with `command -v grep` if it acts up.
 - **Bracketed paste:** user disabled via `bind 'set enable-bracketed-paste off'` in `.bashrc`. If they see `^[[200~` in terminal output, remind them.
@@ -1043,7 +1043,7 @@ For each patch you find, **ask the user to paste it**, then manually apply to th
 #### Step 6 — DELIVER: hand the user the final merged file
 
 Output the **complete, paste-ready** file with:
-- Header comment updated to real filesystem path (`src/app/(auth)/login/page.tsx` not `unizik-ml-fraud-frontend/...`)
+- Header comment updated to real filesystem path (`src/app/(auth)/login/page.tsx` not `...`)
 - Any unused imports removed (ESLint-strict)
 - All patches applied
 - Tabs = 2 spaces, Tailwind class order preserved, no reformatting beyond what's needed
@@ -1100,7 +1100,7 @@ grep -nE 'package\.json|package\\\.json' gemini.md | grep -vE 'You said|placehol
 
 **Any file path generic (broad net):**
 ```bash
-grep -nE '// unizik-ml-fraud-frontend/[^\s]+\.(ts|tsx|css|prisma|json)|// src/[^\s]+\.(ts|tsx|css)' gemini.md | grep -vE 'You said'
+grep -nE '// [^\s]+\.(ts|tsx|css|prisma|json)|// src/[^\s]+\.(ts|tsx|css)' gemini.md | grep -vE 'You said'
 ```
 
 **Code-signal heuristics (when path doesn't appear, but code does):**
@@ -1219,9 +1219,9 @@ python3 ~/Downloads/find_file.py ~/Downloads/gemini.md src/app/page.tsx
 ```
 L67703: heading mention (not code)
 L68859: ### Step 6: The Frontend Login Page (src/app/login/page.tsx)
-L68897: ``` + // unizik-ml-fraud-frontend/src/app/login/page.tsx  ← V1 starts
+L68897: ``` + // src/app/login/page.tsx  ← V1 starts
 L76218: ### The Complete Production Code (src/app/login/page.tsx)
-L76255: // unizik-ml-fraud-frontend/src/app/login/page.tsx  ← V2 starts (final UI)
+L76255: // src/app/login/page.tsx  ← V2 starts (final UI)
 L77589: user pasted V2 back for review (ignore — user's own message)
 L78184: // src/app/login/page.tsx  ← PATCH 1 (logo swap)
 L89408: // src/app/login/page.tsx  ← PATCH 2 (role check fix)
@@ -3459,7 +3459,7 @@ The ONLY allowed modifications are:
    - `\`` → `` ` ``
 
 2. **Fix header path:**
-   - `// unizik-ml-fraud-frontend/src/...` → `// src/...`
+   - `// src/...` → `// src/...`
 
 3. **Strip pandoc HTML wrapper junk:**
    - `<div class="code-block...">`
@@ -3685,7 +3685,7 @@ Continuing UNIZIK fraud detection frontend recovery from DELTA_05.
 "Please do NOT be making changes. My objective is not to optimize or scale — but RECOVER the lost code from Gemini."
 
 ABSOLUTE RULE:
-- ONLY allowed modifications: unescape pandoc artifacts (\| \> \[ \] \$ \& \`), fix header path (drop unizik-ml-fraud-frontend/), strip HTML wrapper junk
+- ONLY allowed modifications: unescape pandoc artifacts (\| \> \[ \] \$ \& \`), fix header path (drop ), strip HTML wrapper junk
 - FORBIDDEN: adding includes to Prisma queries, splitting queries, reformatting, JSDoc, renaming vars, removing unused imports, any "improvement"
 - If original is inefficient/ugly/buggy — DELIVER IT VERBATIM. It's a recovery project, not a refactor.
 
@@ -3759,7 +3759,7 @@ Save as `DELTA_06.md`. Paste as message 1 in new chat.
 
 **ONLY allowed modifications:**
 1. Unescape pandoc artifacts (`\|` `\>` `\[` `\]` `\$` `\&` `` \` `` `\${`)
-2. Fix header path (`unizik-ml-fraud-frontend/src/...` → `src/...`)
+2. Fix header path (`src/...` → `src/...`)
 3. Strip pandoc HTML wrapper junk (`<div>`, `_ngcontent`, `jslog`, `<span class="mat-mdc...">`)
 4. Merge split lines (sed window boundary artifacts)
 5. Unescape `&amp;` → `&`
@@ -4050,7 +4050,7 @@ Continuing UNIZIK fraud detection frontend recovery from DELTA_06.
 
 ONLY allowed modifications:
 1. Unescape pandoc escapes (\| \> \[ \] \$ \& \` \${)
-2. Fix header path (drop unizik-ml-fraud-frontend/)
+2. Fix header path (drop )
 3. Strip HTML wrapper junk
 4. Merge split lines from sed boundary
 5. Unescape &amp; → &
@@ -4132,7 +4132,7 @@ Save as `DELTA_07.md`. Paste as message 1 in new chat.
 
 ### Only allowed modifications:
 1. Unescape pandoc artifacts (`\|` `\>` `\[` `\]` `\$` `\&` `` \` `` `\${`)
-2. Fix header path (`unizik-ml-fraud-frontend/src/...` → `src/...`)
+2. Fix header path (`src/...` → `src/...`)
 3. Strip pandoc HTML wrapper junk
 4. Merge split lines from sed boundary
 5. Unescape `&amp;` → `&`
@@ -4607,7 +4607,7 @@ Save as `DELTA_08.md`. Paste as message 1 in new chat.
 
 ### Only allowed modifications (documented, pre-agreed):
 1. Unescape pandoc artifacts (`\|` `\>` `\[` `\]` `\$` `\&` `` \` `` `\${`)
-2. Fix header path (`unizik-ml-fraud-frontend/src/...` → `src/...`)
+2. Fix header path (`src/...` → `src/...`)
 3. Strip pandoc HTML wrapper junk
 4. Merge split lines from sed boundary
 5. Unescape `&amp;` → `&`
@@ -5187,3 +5187,925 @@ Do not upgrade Prisma. Do not use tsx. Do not use heredocs. Verify before assumi
 ---
 
 **End of DELTA_08.** Session covered: full auth guard implementation, appeal state-machine fix (via cacheComponents disable + remount guard), BOT preset hardware mismatch fix, IP normalization for localhost detection, auth-aware header, dashboard revert to submitted version, forensics computed mismatch for historical data, 5-session dropdown. All 3 bugs from user's bug report addressed. Defense-ready demo narrative confirmed. Remaining: end-to-end test of all modes + commit. ⚡
+
+
+
+# 📋 MEGA HANDOFF — DELTA_09
+
+Save as `DELTA_09.md`. Paste as message 1 in new chat.
+
+---
+
+## 🚨🚨🚨 ABSOLUTE PRIME DIRECTIVE — 100% TRUTH, ZERO GUILE
+
+> **"I need 100% absolute truth. Enough of your going arounds."**
+> 
+> **"Don't deceive against God."**
+
+**Every claim in the UI MUST be traceable to actual code behavior. No marketing language. No aspirational phrasing. No implications that overstate reality. No placeholder text claiming things that don't exist.**
+
+This session's entire purpose became the **lie correction phase** — auditing every user-facing string against what the code actually does.
+
+---
+
+## 1. Project Context (unchanged from DELTA_08)
+
+- **User:** Okeke Divine-Vessel · Reg **2022514075** · UNIZIK Final Year B.Sc. CS
+- **Frontend:** `~/Projects/unizik-ml-project/frontend/`
+- **Backend ML:** `~/Projects/unizik-ml-project/backend/`
+- **Node:** v24.22.1
+- **Source of truth:** `~/Downloads/gemini.md` (~260K lines)
+- **GitHub:** `github.com/Divine-Vessel-Okeke/unizik-ml-project-frontend`
+- **Node:** v24.22.1
+- **OS:** Linux Mint, HP EliteBook 8470p
+- **Battery concern noted:** VS Code uses significant battery (Electron); alternative suggestions given (Kate, Sublime Text, Neovim)
+
+### Topic (verbatim from PDF page 1):
+> **"Design and Implementation of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification"**
+
+### Locked architecture (from DELTA_08, unchanged):
+- Prisma **6.19.0**
+- Seed runner **`ts-node --compiler-options {"module":"CommonJS"}`**
+- Tailwind **v4** (`@import "tailwindcss"` + `@tailwindcss/postcss`)
+- Provider **`sqlite`**
+- `datasource.url` inside `schema.prisma`
+
+---
+
+## 2. THE LIE CORRECTION PHASE — FULL CASE-BY-CASE LEDGER
+
+This section documents **every** deceptive string we found and fixed. **Reference this when auditing future files.**
+
+### Case A — Landing page (`src/app/page.tsx`)
+
+**Original description (in `metadata_description`):**
+> *"A real-time administrative guardrail engineered to detect and intercept financial transaction anomalies while maintaining human-in-the-loop executive override capabilities."*
+
+**Lies found:**
+| Phrase | Problem |
+|---|---|
+| "real-time" | Ambiguous — no WebSocket, no push updates. Admin views are pull-only |
+| "financial transaction anomalies" | Overclaims — only detects behavioral checkout anomalies, not accounting-level ones |
+| "human-in-the-loop executive override" | Admin can't override directly — only via mediated appeals |
+
+**Final 100%-truthful version:**
+> *"A predictive fraud detection system that checks every checkout attempt and blocks suspicious ones before the invoice is marked as cleared, and gives admin a fair way to review blocked-invoice appeals and restore their invoice for payment."*
+
+**Additional rejections during iteration:**
+- ❌ "payment attempt" → misleading (no real card charge). Changed to "checkout attempt"
+- ❌ "blocked-student appeals" → wrong object (student isn't blocked, invoice is). Changed to "blocked-invoice appeals"
+- ❌ "university ledger" → implies real UNIZIK DB. Changed to "invoice marked as cleared"
+
+**Label rename:**
+- ❌ `metadata_description` → ✅ `hero_description` (avoids Next.js `metadata` API collision)
+
+**File location:** `src/lib/config.ts` exports `hero_description` string; consumed in `src/app/page.tsx`.
+
+---
+
+### Case B — Landing page header
+
+**Original:** "Presentation Metadata / Project Defense Brief" (two stacked labels saying same thing)
+
+**Fixed:** "Project Details" (single heading)
+
+**Reason:** "Presentation Metadata" implied event facts (date, panel, venue) but contained project facts (student, dept, tech stack).
+
+---
+
+### Case C — Tech Stack label
+
+**Original:** "Python (Decision Tree) & Next.js (Frontend)"
+
+**Lies:**
+- "Python" as ML is imprecise — Python is a language, not an ML tool
+- "& Next.js (Frontend)" omitted backend API routes and database
+
+**Fixed (iterations):**
+- ✅ `Python ML (Decision Tree) · Flask · Next.js · Prisma/SQLite`
+- ⚠️ Then flagged: "Python ML" mixes abstraction levels ("ML" isn't a technology)
+- ✅ Final: **`Python · Flask · scikit-learn · Next.js · Prisma · SQLite`**
+- Also considered `Python/Flask · scikit-learn · Next.js · Prisma/SQLite` (rejected — `/` reads as OR in formal English, ambiguous)
+- **Chosen separator:** `·` for all items (no ambiguity)
+
+**Label:** "Tech Stack" (accurate — it's a list of technologies)
+
+---
+
+### Case D — Login page (`src/app/(auth)/login/page.tsx`)
+
+**Problems found:**
+1. **"Verifying Hardware & Credentials..."** (loading text) — **LIE**: no hardware verification happens at login. Fingerprint is *captured* and sent as baseline, not verified.
+   - ✅ Fixed to: **"Loading ..."** (generic)
+2. **Empty `deviceId` bug**: button could submit with `deviceId = ""` → API 400 validation error
+   - ✅ Fixed: `disabled={loading || !deviceId}`
+3. **`// RUTHLESS FIX:` comment** — unprofessional if examiner opens source
+   - ⏳ Optional: reword to neutral comment
+4. **Path comment `// unizik-ml-fraud-frontend/src/app/(auth)/login/page.tsx`** — old prefix
+   - ✅ Fixed to: `// src/app/(auth)/login/page.tsx`
+5. **Unused imports** `Shield`, `Cpu`
+   - ⏳ Optional: remove from line 6
+
+**Verified truthful elements (do not touch):**
+- "NNAMDI AZIKIWE UNIVERSITY / Awka, Anambra State" ✅
+- "Admin Login (Prototype)" / "Student Login (Prototype)" ✅
+- "Undergraduate" / "Admin" pill switcher ✅
+- "Admin Username" / "Matriculation Number" labels ✅ (match schema `Admin.username` vs `Student.matricNumber`)
+- "Don't have a student account yet? Register Here" (hidden in admin mode) ✅
+
+---
+
+### Case E — Dashboard (`src/app/(student)/dashboard/page.tsx`)
+
+**Audited strings:**
+
+| Original | Verdict | Fix |
+|---|---|---|
+| "Calculated from DB" | ⚠️ Truthful but poorly placed | **Removed** — number IS the truth, caption invites suspicion |
+| "Student Billing & Transaction Ledger" | ⚠️ 80% — rows are invoices, not transactions | ✅ Changed to **"Student Fee Invoices"** |
+| "Total Fees Cleared" | ✅ 100% truthful | Keep as-is |
+| "Pending Obligations / 0 Invoices Due" | ⚠️ Miscounts BLOCKED invoices (only counts `status === "PENDING"`) | ✅ Recommended change label to **"Payable Invoices"** |
+| "Undergraduate Financial Hub" | ✅ 100% truthful | Keep as-is |
+| Badge: "SECURITY HOLD" (no-appeal blocked state) | ⚠️ User wanted "BLOCKED" | ✅ Changed to "BLOCKED" per user preference |
+
+**Pending action on dashboard:** the "Payable Invoices" label change was recommended but may not have been applied — verify.
+
+---
+
+### Case F — Fee invoice page (`src/app/(student)/invoices/page.tsx`)
+
+**Audited strings:**
+
+| Original | Verdict | Fix |
+|---|---|---|
+| "Select an institutional fee category for the selected academic session" | ⚠️ Ambiguous ("institutional" claims data source) | ✅ Changed to **"Select an academic session and a fee category."** |
+| ICT description: "Covers Wi-Fi access, digital library, and student portal bandwidth." | ⚠️ 80% — claims services not delivered in prototype | ⏳ Recommended: **"Institutional fee for ICT infrastructure and student portal maintenance."** |
+| Exam Clearance description: "Required fee to generate biometric exam hall permits." | ⚠️ Implies permit generated — doesn't happen | ⏳ Recommended: **"Institutional fee for semester examination clearance."** |
+| Library description: "Access to physical and online IEEE/ACM research repositories." | ⚠️ Implies access granted — doesn't happen | ⏳ Recommended: **"Institutional fee for library development and resource access."** |
+| Tuition description | ✅ 100% truthful | Keep |
+| Acceptance description | ✅ 100% truthful | Keep |
+| 5 academic sessions dropdown | ✅ 100% truthful | Keep |
+
+**Status:** The 3 description rewordings were recommended but not confirmed applied. Verify on disk.
+
+---
+
+### Case G — Checkout page (`src/app/(student)/checkout/[invoiceId]/page.tsx`)
+
+**Audited strings:**
+
+| Original | Verdict | Fix |
+|---|---|---|
+| "Central Bursary Gateway" | 🚨 3 false words (no Central, no Bursary, no Gateway) | ✅ Changed to **"Prototype Checkout"** |
+| "Payment Authorization" | ⚠️ "Payment" implies money moves | ✅ Changed to **"Fee Payment Authorization"** |
+| "Institutional E-Payment Gateway / Remita / Paystack Educational Channel / ACTIVE" | 🚨 **Objectively false** — no processor integration exists | ✅ Changed to **"Simulated Settlement / ML verdict written to local ledger, no processor API call. [DEMO]"** |
+| "Encrypted transaction verified by central university records." | 🚨 2 of 3 claims false (no app-layer encryption, no verification, no central UNIZIK records) | ✅ Changed to **"Payment authorization classified by ML and recorded in the prototype ledger."** |
+| "Complete Payment (₦15,000.00)" | ⚠️ 70% — implies real payment | ✅ Changed to **"Complete Checkout (₦15,000.00)"** |
+| "Payment Attempt Blocked" (block screen) | ✅ truthful | Keep |
+| "Request Review from Bursary" | ✅ truthful | Keep |
+| "Return to Previous Page" (BackButton) | ✅ truthful | Keep |
+
+**Note:** Some of these fixes may not be applied to the current disk file. Need to verify.
+
+---
+
+### Case H — Receipt page (`src/app/(student)/receipt/[txId]/page.tsx`)
+
+**🚨 THIS WAS THE MOST DECEPTIVE PAGE — 10 of 14 elements were false**
+
+| Original | Truth | Fix |
+|---|---|---|
+| "NNAMDI AZIKIWE UNIVERSITY, AWKA" | True name, but no UNIZIK system issued this | ✅ Kept (name accurate) |
+| "Office of the Bursar / Student Financial Services" | 🚨 **No Bursary office involved** | ✅ Changed to **"Department of Computer Science / B.Sc. Capstone Project"** |
+| "PMB 5025, Awka, Anambra State, Nigeria" | UNIZIK's address, implies official letterhead | ✅ Changed to **"Academic Prototype · Awka, Anambra State, Nigeria"** |
+| "Verified" (green badge) | ML classified LEGITIMATE — nothing "verified" by UNIZIK | ✅ Changed to **"ML Classified"** |
+| "Official Student Fee e-Receipt" | 🚨 Not official | ✅ Changed to **"Fee Payment Receipt (Prototype)"** |
+| "Payment Channel: Remita Educational Gateway" | 🚨 **No Remita integration exists** | ✅ Changed to **"Simulated Settlement (Prototype)"** |
+| "Audit Status: VERIFIED IN LEDGER" | Local SQLite only | ✅ Changed to **"RECORDED IN PROTOTYPE LEDGER"** |
+| QR text: "verify document authenticity directly against central university records" | 🚨 No central UNIZIK records | ✅ Changed to **"Scan to view this transaction record on the prototype instance."** |
+| "BURSARY DEPARTMENT / ELECTRONICALLY CLEARED" | 🚨 No Bursary issued this | ✅ Changed to **"ACADEMIC PROTOTYPE / ML CLASSIFIED"** |
+| "Authorized Bursary Officer" | 🚨 No officer signed | ✅ Changed to **"B.Sc. Capstone Project"** |
+| "Valid without physical signature" | Implies official document | ✅ Changed to **"Not an official UNIZIK document"** |
+| "Print Official Receipt" button | Not official | ✅ Changed to **"Print Receipt"** |
+| "Retrieving Verified e-Receipt..." (loading) | Not verified by anyone | ✅ Changed to **"Retrieving Receipt..."** |
+| "Receipt Verification Failed" | Nothing was "verified" | ✅ Changed to **"Receipt Retrieval Failed"** |
+| Receipt number, date, hash, reference, amount, session, student, category | ✅ 100% truthful | Kept |
+
+**Preserved (must not break):** Student name from `invoice.student` (consistent regardless of viewer — admin or anonymous), all styling, print styles, QR URL, hash.
+
+---
+
+### Case I — Diagnostic panel (`src/components/DiagnosticsPanel.tsx`)
+
+**Deceptive patterns removed:**
+- ❌ `simMode` presets (BOT = 65, 14, 0.12 forced) — fabricated feature values
+- ❌ "THESIS DEFENSE SAFETY GUARDRAIL" that force-flipped Python's LEGITIMATE to FRAUDULENT
+
+**Replaced with:**
+- ✅ Live telemetry polling (`/api/telemetry` every 5s)
+- ✅ Per-feature editing that freezes to typed value
+- ✅ Reset button restores live
+- ✅ Each edited field labeled "Override" with amber indicator
+- ✅ Honest `isSimulated` flag → `telemetrySource: 'SIMULATED'` in DB
+
+**Fingerprint sensitivity discovered:** changing PC timezone from Africa/Lagos → something else → `session_hardware_mismatch = 1`. Timezone is one of 7 signals in `fingerprint.ts` hash. Not a bug — documented limitation.
+
+---
+
+### Case J — Audit log/forensics page (`src/app/(admin)/admin/forensics/[txId]/page.tsx`)
+
+**Fixed discrepancies auto-detected:**
+- Off-peak flag vs actual timestamp mismatch (info for SIMULATED, error for LIVE)
+- Hardware mismatch flag vs actual fingerprint divergence
+- Legacy BOT/SPOOF device IDs (`MALICIOUS_BOT`, `PROXY_CLUSTER`) marked as legacy
+- `confidence === 0.9999` flagged as fallback heuristic
+- BLOCKED transaction missing audit log flagged
+
+**Telemetry source display:** small pill under status badge (LIVE = gray neutral, UNSPECIFIED = gray neutral, SIMULATED = amber warning)
+
+**Layout constraint:** user wanted ORIGINAL layout preserved. No raw record snapshot, no top banner, discrepancies at bottom.
+
+---
+
+### Case K — Velocity page (`src/app/(admin)/admin/velocity/page.tsx`)
+
+**Bugs found and fixed:**
+
+| Bug | Fix |
+|---|---|
+| `lastStatus` showed OLDEST transaction (Map.set overwrote newest) | ✅ Guarded with `!has()` — newest preserved |
+| 1 blocked / 0 cleared device showed green "Personal Computer" | ✅ Changed threshold from `>= 2` to `>= 1` |
+| Suspicious devices buried at bottom of table | ✅ Sort: suspicious first, then by student count |
+| No summary of fraud devices | ✅ Added 4th metric card "Suspicious Devices" |
+| Student card showed `BLOCKED` alone (ambiguous) | ✅ Changed to `XC · YB` counts + `Latest:` badge |
+
+**What this page actually shows (verified against PDF):**
+- "Students Using PC" counts distinct studentIds who made transactions from this device in the **last 24h**, not all-time
+- Note: `/admin/velocity` shows all-time counts, but diagnostic panel shows 24h counts — same name, different window
+- PDF says "used the device"; implementation measures "attempted payment from"
+- **Functional mismatch disclosed, but design intent matches**
+
+**Device ID generation:**
+- Real IDs (`UNIZIK_FP_FIREFOX_CF210EE1`, `UNIZIK_FP_FIREFOX_2A10913C`) = hash of 7 signals (screen, CPU cores, platform, timezone, userAgent, language, canvas render)
+- Fake IDs (`UNIZIK_FP_MALICIOUS_BOT_001`, `UNIZIK_FP_PROXY_CLUSTER_999`) = hardcoded in checkout demo switch
+- The 1 cleared / 10 blocked on `MALICIOUS_BOT_001` = testing artifact from before Fix 5 added `targetMismatch = 1`
+
+**Pending:** de-jargonizer fragment from gemini.md L134880 was offered but not applied (cosmetic).
+
+---
+
+### Case L — Admin appeals page (`src/app/(admin)/admin/appeals/page.tsx`)
+
+**Bug fixed:** approve/reject caused full-table flash (via `fetchAppeals()` set `loading = true`)
+
+**Fix:** optimistic in-place update — `setAppeals(prev => prev.map(a => a.id === appealId ? {...a, status, adminNotes} : a))` + `setExpandedId(null)`
+
+**Now:** only affected row updates. No spinner. No flash. Other rows untouched.
+
+**Error handling added:** `alert()` on API failure (was silent before).
+
+---
+
+### Case M — Admin dashboard (`src/app/(admin)/admin/dashboard/page.tsx`)
+
+**Reverted to L129525 submitted version** (not L130437 which was a later redesign):
+
+| Element | Submitted (L129525) | Later redesign (L130437) |
+|---|---|---|
+| Card 2 title | "Blocked Transactions" | "Security Holds / Blocked" |
+| Card 3 title | "Audit Engine Status" | "Security System Status" |
+| Card 3 value | "Active & Monitoring" | "Active & Online" |
+| Table title | "Student Payment Registry & Audit Records" | "Recent Payment Activity" |
+| Button | "View Full Registry" | "View All Transactions" |
+| Columns | Timestamp / Matriculation No. / Amount / Clearance Status / Audit Remarks | Date & Time / Matriculation No. / Amount / Status / System Notes |
+
+**"Audit Engine Status: Active & Monitoring" was deceptive** — hardcoded text, always green.
+
+**Fix:** Connected to `/api/health` endpoint. Now shows:
+- 🟢 "Active & Monitoring" (ONLINE — model loaded)
+- 🟡 "Model Missing" (DEGRADED — Flask up but `.joblib` missing)
+- 🔴 "AI Service Offline" (OFFLINE — Flask unreachable)
+
+**`/api/admin/stats` route was rewritten** to return `mlHealth` object with `status: 'ONLINE' | 'DEGRADED' | 'OFFLINE' | 'UNKNOWN'`.
+
+---
+
+### Case N — Admin transactions page (`src/app/(admin)/admin/transactions/page.tsx`)
+
+**Search bug fixed:** `mode: 'insensitive'` removed from all 4 `contains` clauses (SQLite doesn't support it → 500 error every search)
+
+**Pagination added:**
+- Page size selector (10/15/20/30/50) — was hardcoded
+- "Showing X–Y of Z" — was missing
+- Reset to page 1 on filter change
+- Footer split: left (Showing + Rows) / right (Previous/Page/Next)
+
+**Verified:** API already supports `limit` param, `total`, `pages` in response.
+
+---
+
+### Case O — Fee invoice page (`src/app/(student)/invoices/page.tsx`)
+
+**Category descriptions**: 3 out of 5 were misleading (already covered in Case F).
+
+**5 academic sessions added** (was 2): 2025/2026, 2024/2025, 2023/2024, 2022/2023, 2021/2022.
+
+---
+
+## 3. CRITICAL DATA PROVENANCE — Telemetry Source Enum
+
+**Schema change:** added `TelemetrySource` enum to `prisma/schema.prisma`:
+
+```prisma
+enum TelemetrySource {
+  UNSPECIFIED
+  LIVE
+  SIMULATED
+}
+```
+
+**Transaction model:**
+```prisma
+telemetrySource  TelemetrySource   @default(UNSPECIFIED) @map("telemetry_source")
+@@index([telemetrySource, createdAt])
+```
+
+**Migration:** old rows auto-filled with `UNSPECIFIED` (user chose Option A — leave old data marked UNSPECIFIED, honest about unknowable provenance).
+
+**Rule:**
+- `UNSPECIFIED` = pre-tracking records (legacy)
+- `LIVE` = all 6 values observed from browser
+- `SIMULATED` = one or more values manually overridden in diagnostics panel
+
+---
+
+## 4. FALLBACK REMOVAL — AI-down must fail, not fabricate
+
+**Two fallbacks removed** (user said "no fallbacks"):
+
+### Removed #1 — `fraud-engine.ts` heuristic fallback
+```ts
+// BEFORE (deceptive):
+} catch (mlError) {
+  isErrorFallback = true;
+  if (failedAttempts1h >= 9 || (targetMismatch === 1 && targetAsn === 1)) {
+    aiVerdict = 'FRAUDULENT';  // fabricates verdict
+    aiConfidence = 0.9999;
+  }
+  // Falls through to DB write with aiVerdict = 'LEGITIMATE' (silent clear)
+}
+```
+
+### Removed #2 — `fraud-engine.ts` silent CLEARED
+```ts
+// BEFORE (deceptive): if AI down AND heuristic didn't fire → transaction created as CLEARED with confidence 1.0, no audit log, invoice → PAID
+```
+
+**AFTER (current):**
+```ts
+} catch (mlError: any) {
+  console.error('[FRAUD ENGINE] AI Microservice unavailable:', mlError.message);
+  throw new Error(`AI_ENGINE_UNAVAILABLE: ${mlError.message}`);
+}
+```
+
+**Result:** AI unreachable → `evaluatePaymentTransaction()` throws → checkout returns **503** → **no DB write**, no invoice cleared, student sees error.
+
+### Similarly for `network-risk.ts` — ip-api.com failure
+
+**Before:**
+```ts
+if (data.status !== "success") return 1;  // fabricates HIGH RISK
+```
+
+**After:**
+```ts
+if (data.status !== "success") {
+  throw new Error(`ip-api.com returned status "${data.status}"`);
+}
+// ... catch block also throws NETWORK_LOOKUP_UNAVAILABLE
+```
+
+**Localhost short-circuit STILL returns 0** — that's NOT a fallback, it's the true value (localhost isn't a VPN).
+
+---
+
+## 5. FRAUD-ENGINE FEATURE VECTOR REFERENCE
+
+**6 features, order matters:**
+1. `device_student_count_24h` — distinct students on this device in last 24h
+2. `page_dwell_time_seconds` — seconds on checkout page
+3. `is_high_risk_asn` — 0 = MTN/Glo/Airtel/9Mobile (substring match on ISP name); 1 = all other networks (VPNs, datacenters, Starlink, Spectranet, ipNX, etc.)
+4. `failed_attempts_1h` — count of BLOCKED (or FAILED, but never set) transactions for this student or device in last hour
+5. `session_hardware_mismatch` — 0 = current fingerprint matches `loginDeviceId`, 1 = differs
+6. `is_off_peak_hour` — 0 = standard hours; 1 = 1:00 AM – 4:30 AM WAT (computed server-side from UTC time + 1)
+
+**Verified BOT feature vector after Fix 5:** `[65, 0.12, 1, 14, 1, 1]`
+
+---
+
+## 6. VERIFIED BEHAVIORS (for defense demo)
+
+### Test 1 — NORMAL mode (after fixes)
+- Flask receives: `[1, real_dwell, 0, 1, 0, 0]` (asn = 0 due to localhost)
+- Verdict: LEGITIMATE
+- Receipt shows correctly
+
+### Test 2 — BOT mode (after Fix 5)
+- Flask receives: `[65, 0.12, 1, 14, 1, 1]` (all 6 fraud signals)
+- Verdict: FRAUDULENT
+- Forensics shows all checkpoints ✕
+- Block screen shows → appeal flow works
+
+### Test 3 — SPOOF mode
+- Flask receives: `[24, X, 1, 6, 1, 0]`
+- Verdict: FRAUDULENT
+
+### Test 4 — ASN classifier (via curl with `x-forwarded-for`)
+- `105.112.0.1` (Airtel Nigeria) → `is_high_risk_asn: 0` ✅
+- `104.131.0.1` (DigitalOcean) → `is_high_risk_asn: 1` ✅
+- `not-a-valid-ip` → 500 error (fail-secure working, though HTTP code should be 503)
+
+**Finding:** telemetry endpoint returns 500 instead of 503 for network failure — different from checkout. Optional fix recommended.
+
+### Test 5 — Appeal flow
+- Submit → invoice status becomes BLOCKED
+- Admin approve → invoice back to PENDING
+- Student retry → Pay Now works
+- **FIXED:** "success screen persists" bug via cacheComponents disable + remount guard
+
+### Test 6 — Anonymous receipt view
+- Clear localStorage, view receipt URL
+- Header: no name badge, "Login" button (not "Sign Out")
+- Receipt body: still shows student info (from `invoice.student`)
+
+### Test 7 — Fallback behavior (verified not deceptive anymore)
+- Stop Flask → checkout returns 503 "AI verification service is currently unavailable. No payment was processed. Please retry in a moment."
+- No transaction created
+- Invoice status unchanged
+
+---
+
+## 7. CURRENT FILES ON DISK (working tree structure)
+
+```
+src/
+├── app/
+│   ├── (admin)/
+│   │   └── admin/
+│   │       ├── appeals/page.tsx              ✅ optimized updates
+│   │       ├── dashboard/page.tsx            ✅ reverted to L129525 + live health
+│   │       ├── forensics/[txId]/page.tsx     ✅ discrepancy detection added
+│   │       ├── transactions/page.tsx         ✅ pagination + search fix
+│   │       └── velocity/page.tsx             ✅ bug fixes + aggregate counts
+│   ├── (auth)/
+│   │   ├── login/page.tsx                    ✅ truthfulness fixes applied
+│   │   └── register/
+│   │       ├── page.tsx                      ✅
+│   │       └── admin/page.tsx                ✅ V3 light version
+│   ├── (student)/
+│   │   ├── layout.tsx                        ✅ auth guard
+│   │   ├── checkout/[invoiceId]/page.tsx     ✅ panel integrated
+│   │   ├── dashboard/page.tsx                ⚠️ some truthfulness fixes pending (Payable Invoices label)
+│   │   ├── invoices/page.tsx                 ⚠️ 3 category descriptions pending reword
+│   │   ├── receipt/[txId]/page.tsx           ✅ 10 lies fixed
+│   │   └── support/appeal/page.tsx           ✅ remount guard + filter
+│   ├── api/
+│   │   ├── admin/
+│   │   │   ├── forensics/[txId]/route.ts     ✅
+│   │   │   ├── stats/route.ts                ✅ added mlHealth
+│   │   │   ├── transactions/route.ts         ✅ search fix (removed `mode: 'insensitive'`)
+│   │   │   └── velocity/route.ts             ✅ isSuspicious + student counters
+│   │   ├── appeals/route.ts                  ✅ POST guard against APPROVED wipe
+│   │   ├── auth/
+│   │   │   ├── login/route.ts                ✅
+│   │   │   ├── register/route.ts             ✅
+│   │   │   └── register-admin/route.ts       ✅
+│   │   ├── checkout/route.ts                 ✅ AI-unavailable → 503
+│   │   ├── invoices/route.ts                 ✅
+│   │   ├── receipt/[txId]/route.ts           ✅
+│   │   └── telemetry/route.ts                ✅ NEW (panel polling endpoint)
+│   ├── layout.tsx                            ✅
+│   ├── page.tsx                              ✅ landing page, hero_description
+│   └── globals.css                           ✅
+├── components/
+│   ├── AdminHeader.tsx                       ✅ L134017
+│   ├── BackButton.tsx                        ✅ ghost style
+│   ├── DiagnosticsPanel.tsx                  ✅ NEW
+│   └── StudentHeader.tsx                     ✅ reads localStorage only
+├── lib/
+│   ├── config.ts                             ✅ exports hero_description
+│   ├── fingerprint.ts                        ✅
+│   ├── fraud-engine.ts                       ✅ no fallbacks
+│   ├── network-risk.ts                       ✅ no fallbacks, localhost returns 0
+│   └── prisma.ts                             ✅
+└── prisma/
+    ├── schema.prisma                         ✅ TelemetrySource enum added
+    ├── seed.ts                               ✅
+    ├── dev.db                                ✅
+    └── migrations/
+        ├── 20261025154749_init/
+        └── 2026XXXXXX_add_telemetry_source/  ✅ (new migration)
+```
+
+**Removed/deprecated:**
+- `DefenseTelemetrySwitch.tsx` — replaced by DiagnosticsPanel
+- `useRequireStudent.ts` — never used
+
+---
+
+## 8. COMMANDS TO RUN FOR FULL CONTEXT (paste output in new chat)
+
+### Command Block 1 — Dump ALL frontend app files
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+for f in \
+  "src/app/page.tsx" \
+  "src/app/layout.tsx" \
+  "src/app/globals.css" \
+  "src/lib/config.ts" \
+  "src/app/(auth)/login/page.tsx" \
+  "src/app/(auth)/register/page.tsx" \
+  "src/app/(auth)/register/admin/page.tsx"; do
+  echo ""
+  echo "════════════════════════════════════════════════════════════"
+  echo "=== FILE: $f ==="
+  echo "════════════════════════════════════════════════════════════"
+  if [ -f "$f" ]; then cat "$f"; else echo "❌ MISSING"; fi
+  echo ""
+done
+```
+
+### Command Block 2 — Dump ALL student pages
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+for f in \
+  "src/app/(student)/layout.tsx" \
+  "src/app/(student)/dashboard/page.tsx" \
+  "src/app/(student)/invoices/page.tsx" \
+  "src/app/(student)/checkout/[invoiceId]/page.tsx" \
+  "src/app/(student)/receipt/[txId]/page.tsx" \
+  "src/app/(student)/support/appeal/page.tsx"; do
+  echo ""
+  echo "════════════════════════════════════════════════════════════"
+  echo "=== FILE: $f ==="
+  echo "════════════════════════════════════════════════════════════"
+  if [ -f "$f" ]; then cat "$f"; else echo "❌ MISSING"; fi
+  echo ""
+done
+```
+
+### Command Block 3 — Dump ALL admin pages
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+for f in \
+  "src/app/(admin)/admin/dashboard/page.tsx" \
+  "src/app/(admin)/admin/transactions/page.tsx" \
+  "src/app/(admin)/admin/appeals/page.tsx" \
+  "src/app/(admin)/admin/velocity/page.tsx" \
+  "src/app/(admin)/admin/forensics/[txId]/page.tsx"; do
+  echo ""
+  echo "════════════════════════════════════════════════════════════"
+  echo "=== FILE: $f ==="
+  echo "════════════════════════════════════════════════════════════"
+  if [ -f "$f" ]; then cat "$f"; else echo "❌ MISSING"; fi
+  echo ""
+done
+```
+
+### Command Block 4 — Dump ALL API routes
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+find src/app/api -name "route.ts" | sort | while read f; do
+  echo ""
+  echo "════════════════════════════════════════════════════════════"
+  echo "=== FILE: $f ==="
+  echo "════════════════════════════════════════════════════════════"
+  cat "$f"
+  echo ""
+done
+```
+
+### Command Block 5 — Dump ALL components + lib
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+for f in \
+  "src/components/StudentHeader.tsx" \
+  "src/components/AdminHeader.tsx" \
+  "src/components/BackButton.tsx" \
+  "src/components/DiagnosticsPanel.tsx" \
+  "src/lib/fingerprint.ts" \
+  "src/lib/fraud-engine.ts" \
+  "src/lib/network-risk.ts" \
+  "src/lib/prisma.ts" \
+  "src/lib/config.ts"; do
+  echo ""
+  echo "════════════════════════════════════════════════════════════"
+  echo "=== FILE: $f ==="
+  echo "════════════════════════════════════════════════════════════"
+  if [ -f "$f" ]; then cat "$f"; else echo "❌ MISSING"; fi
+  echo ""
+done
+```
+
+### Command Block 6 — Prisma schema + seed + migrations
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+for f in \
+  "prisma/schema.prisma" \
+  "prisma/seed.ts" \
+  "prisma/migrations/migration_lock.toml"; do
+  echo ""
+  echo "════════════════════════════════════════════════════════════"
+  echo "=== FILE: $f ==="
+  echo "════════════════════════════════════════════════════════════"
+  if [ -f "$f" ]; then cat "$f"; else echo "❌ MISSING"; fi
+  echo ""
+done
+
+echo "=== Migrations list ==="
+find prisma/migrations -type f -name "*.sql" | sort
+```
+
+### Command Block 7 — Backend ML code (Python)
+
+```bash
+cd ~/Projects/unizik-ml-project/backend
+
+echo "════════════════════════════════════════════════════════════"
+echo "=== Backend file tree ==="
+echo "════════════════════════════════════════════════════════════"
+find . -type f \( -name "*.py" -o -name "*.txt" -o -name "*.md" \) -not -path "./.venv/*" -not -path "./__pycache__/*" | sort
+
+echo ""
+echo "════════════════════════════════════════════════════════════"
+echo "=== File contents ==="
+echo "════════════════════════════════════════════════════════════"
+for f in app/config.py app/model_engine.py app/main.py app/train_model.py app/data_generator.py requirements.txt; do
+  echo ""
+  echo "=== FILE: $f ==="
+  if [ -f "$f" ]; then cat "$f"; else echo "❌ MISSING"; fi
+  echo ""
+done
+```
+
+### Command Block 8 — Project config files
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+for f in \
+  "package.json" \
+  "next.config.ts" \
+  "postcss.config.mjs" \
+  "tsconfig.json" \
+  ".env" \
+  ".env.example"; do
+  echo ""
+  echo "════════════════════════════════════════════════════════════"
+  echo "=== FILE: $f ==="
+  echo "════════════════════════════════════════════════════════════"
+  if [ -f "$f" ]; then cat "$f"; else echo "❌ MISSING"; fi
+  echo ""
+done
+```
+
+### Command Block 9 — Database state (complete)
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+
+sqlite3 -column -header prisma/dev.db << 'EOF'
+SELECT '═══════════ STUDENTS ═══════════' AS section;
+SELECT id, matric_number, first_name || ' ' || last_name AS name, department, level FROM students;
+
+SELECT '' AS blank;
+SELECT '═══════════ INVOICES + LATEST TX + APPEAL ═══════════' AS section;
+SELECT
+  s.matric_number,
+  i.category,
+  i.status AS inv_status,
+  t.status AS latest_tx_status,
+  t.telemetry_source,
+  a.status AS appeal_status
+FROM fee_invoices i
+JOIN students s ON s.id = i.student_id
+LEFT JOIN transactions t ON t.invoice_id = i.id AND t.created_at = (
+  SELECT MAX(created_at) FROM transactions WHERE invoice_id = i.id
+)
+LEFT JOIN appeals a ON a.transaction_id = t.id
+ORDER BY s.matric_number, i.created_at DESC;
+
+SELECT '' AS blank;
+SELECT '═══════════ TRANSACTIONS BY TELEMETRY SOURCE ═══════════' AS section;
+SELECT telemetry_source, COUNT(*) AS count FROM transactions GROUP BY telemetry_source;
+
+SELECT '' AS blank;
+SELECT '═══════════ ALL APPEALS ═══════════' AS section;
+SELECT s.matric_number, i.category, a.status, substr(a.reason,1,40) AS reason FROM appeals a
+JOIN transactions t ON t.id = a.transaction_id
+JOIN students s ON s.id = a.student_id
+JOIN fee_invoices i ON i.id = t.invoice_id
+ORDER BY a.created_at DESC;
+EOF
+```
+
+---
+
+## 9. BEHAVIORAL RULES FOR NEXT AI (carry forward, non-negotiable)
+
+### Truthfulness is the prime directive
+- **Every user-facing string MUST map to actual code behavior**
+- **No "real-time" unless HTTP synchronous pre-commit qualifies** (state explicitly which kind)
+- **No "verified by X" unless X actually verifies**
+- **No "official" unless UNIZIK actually issues it**
+- **No "Remita/Paystack/gateway" unless processor API is called**
+- **No "encrypted" unless app-layer encryption exists** (HTTPS in transit is not what "encrypted" implies here)
+- **No "university ledger"** — say "prototype ledger" or "invoice marked as cleared"
+- **No "Central Bursary"** — say "Prototype Checkout" or "Simulated Settlement"
+- **No implying real money moves** — say "checkout attempt" or "payment request", not "payment attempt"
+
+### Behavioral Do's
+- Verify every claim against code before proposing changes
+- Use `sed -n 'START,ENDp' gemini.md` for extraction (no file redirects)
+- Combine greps into one block unless they must separate
+- Deliver complete paste-ready files (no fragments unless asked)
+- Preserve Navy `#001C3D` + Orange `#F58220`
+- **Test claims with `curl -H "x-forwarded-for: X"` — this is NOT sinful** (it's the header's intended use; you're acting as the proxy)
+- Use `·` not `/` in tech lists (`/` reads as OR in formal English)
+
+### Behavioral Don'ts
+- Don't assume files are missing without checking gemini.md
+- Don't upgrade Prisma to 7/8
+- Don't use `tsx` for seed
+- Don't use `@tailwind` directives
+- Don't use heredoc `cat > package.json`
+- Don't fabricate fallbacks that produce false CLEARED records
+- Don't force `FRAUDULENT` when ML was unreachable (throw instead)
+- Don't add "university ledger", "Central Bursary", "Verified by central records", "Remita/Paystack", "Encrypted transaction" anywhere
+- Don't use "RUTHLESS FIX" in code comments — looks unprofessional if examiner opens source
+
+### When in doubt, ask:
+- Which file does this claim map to?
+- What does the actual code do at that point?
+- Would an examiner asking "show me" find nothing?
+
+---
+
+## 10. NEXT STEPS (priority order)
+
+### Step 1 — Complete pending truthfulness fixes (if not applied)
+
+1. **`src/app/(student)/dashboard/page.tsx`**
+   - Change "Pending Obligations / 0 Invoices Due" → **"Payable Invoices"** (or split into "X Ready / Y Hold")
+   - Confirm badge for no-appeal blocked state says **"BLOCKED"** (not "SECURITY HOLD")
+
+2. **`src/app/(student)/invoices/page.tsx`**
+   - Reword 3 category descriptions:
+     - ICT: "Institutional fee for ICT infrastructure and student portal maintenance."
+     - Exam Clearance: "Institutional fee for semester examination clearance."
+     - Library: "Institutional fee for library development and resource access."
+
+3. **`src/app/(student)/checkout/[invoiceId]/page.tsx`**
+   - Confirm "Central Bursary Gateway" → "Prototype Checkout"
+   - Confirm "Remita/Paystack" block → "Simulated Settlement"
+   - Confirm "Encrypted transaction verified by central university records" → "Payment authorization classified by ML and recorded in the prototype ledger"
+   - Confirm "Complete Payment" → "Complete Checkout"
+
+4. **`src/app/(auth)/login/page.tsx`**
+   - Remove unused `Shield`, `Cpu` imports (cosmetic)
+   - Reword `// RUTHLESS FIX:` comment (cosmetic)
+
+5. **`src/app/api/telemetry/route.ts`** (optional)
+   - Add 503 handler for `NETWORK_LOOKUP_UNAVAILABLE` (currently returns 500)
+
+6. **`src/components/DiagnosticsPanel.tsx`**
+   - Verify `failed_attempts_1h` hint says "Blocked transactions in the past hour involving this student or this device"
+   - Verify `is_high_risk_asn` hint says "0 = MTN / Glo / Airtel / 9Mobile; 1 = all other networks"
+
+### Step 2 — End-to-end defense demo test
+
+```bash
+# Terminal 1
+cd ~/Projects/unizik-ml-project/backend && .venv/bin/python app/main.py
+
+# Terminal 2
+cd ~/Projects/unizik-ml-project/frontend && npm run dev
+```
+
+Run full defense demo:
+1. Landing page — verify hero_description displays
+2. Login as student (2022514001 / password123)
+3. Dashboard — verify labels
+4. Invoices — verify category descriptions
+5. Generate invoice → checkout
+6. Open DiagnosticsPanel, edit `failed_attempts_1h = 15`, `is_high_risk_asn = 1`, `is_off_peak_hour = 1`
+7. Complete Checkout → block screen
+8. Request Review → submit appeal
+9. Login as admin → approve appeal
+10. Student retry → Pay Now → success receipt
+
+### Step 3 — Commit
+
+```bash
+cd ~/Projects/unizik-ml-project/frontend
+git add .
+git commit -m "truthfulness audit: fixed deceptive claims across landing, dashboard, checkout, receipt, appeals"
+git push
+```
+
+### Step 4 — Optional cleanup
+- Remove `DefenseTelemetrySwitch.tsx` if still on disk
+- Align `@prisma/client` and `prisma` versions (both should be 6.19.0)
+
+---
+
+## 11. EXACT RESTART MESSAGE (paste as message 1 in new chat)
+
+```
+Continuing UNIZIK fraud detection frontend recovery from DELTA_09.
+
+⚠️ ABSOLUTE PRIME DIRECTIVE — 100% TRUTH, ZERO GUILE:
+User's words: "I need 100% absolute truth. Enough of your going arounds."
+User's words: "Don't deceive against God."
+
+Every user-facing string must map to actual code behavior. No marketing language. No "verified by" unless something verifies. No "official" unless UNIZIK issues it. No "Remita/Paystack" unless processor called. No "encrypted" unless app-layer encryption. No "university ledger" — say "prototype ledger". No "Central Bursary" — say "Prototype Checkout". No implying real money moves — say "checkout attempt" not "payment attempt".
+
+LOCKED ARCHITECTURE:
+- Prisma 6.19.0 (url inside schema.prisma, no adapter)
+- ts-node with {"module":"CommonJS"} for seed (NOT tsx)
+- @tailwindcss/postcss (NOT @tailwindcss/turbopack)
+- SQLite
+- Tailwind 4 with @import "tailwindcss"
+
+CURRENT STATE (as of this session):
+- All files recovered from gemini.md
+- Truthfulness audit applied to: landing page, login, dashboard, checkout, receipt, forensics, appeals, velocity, admin dashboard
+- TelemetrySource enum added to Prisma (UNSPECIFIED | LIVE | SIMULATED)
+- Fraud-engine + network-risk fallbacks REMOVED (AI-down returns 503, no false CLEARED)
+- DiagnosticsPanel added with honest isSimulated flag
+- cacheComponents disabled in next.config.ts
+- Received 503 endpoint verified via curl tests
+
+PENDING TRUTHFULNESS FIXES (verify on disk):
+1. Dashboard: "Pending Obligations / 0 Invoices Due" → "Payable Invoices"
+2. Dashboard: no-appeal blocked badge "SECURITY HOLD" → "BLOCKED"
+3. Invoices: 3 category descriptions reworded (ICT, Exam, Library)
+4. Checkout: verify "Prototype Checkout" heading (not "Central Bursary Gateway")
+5. Checkout: verify "Complete Checkout" button (not "Complete Payment")
+6. Checkout: verify "Simulated Settlement" (not "Remita/Paystack")
+7. Checkout: verify footer text (not "Encrypted transaction verified by central records")
+8. Login: remove unused Shield, Cpu imports + reword "RUTHLESS FIX" comment
+9. Telemetry endpoint: add 503 handler for NETWORK_LOOKUP_UNAVAILABLE
+10. DiagnosticsPanel: verify failed_attempts_1h hint says "Blocking transactions in past hour involving this student or this device"
+
+NEXT ACTIONS:
+1. Run Command Block 1-9 from Section 8 to dump all current code — paste to me
+2. I verify what's actually on disk
+3. Complete pending truthfulness fixes
+4. Run end-to-end defense demo test
+5. Commit + push
+
+VERIFIED WORKING (for defense demo):
+- BOT mode → Flask receives [65, 0.12, 1, 14, 1, 1] → BLOCKED
+- NORMAL mode → Flask receives [1, real_dwell, 0, 1, 0, 0] → LEGITIMATE
+- ASN test: 105.112.0.1 (Airtel) → is_high_risk_asn=0 ✅
+- ASN test: 104.131.0.1 (DigitalOcean) → is_high_risk_asn=1 ✅
+- Appeal flow: submit → admin approve → invoice restores to PENDING → retry works ✅
+- Anonymous receipt view shows Login button ✅
+- AI-down returns 503, no phantom transactions ✅
+
+ABOUT curl -H "x-forwarded-for:": This is NOT sinful — the header is designed to be set by infrastructure. In dev you're acting as the proxy. It's standard testing. Only becomes sin if you present test results as real-world observations. Be transparent: say "I'm simulating a request from X IP by setting the header."
+
+Do not upgrade Prisma. Do not use tsx. Do not use heredocs. Verify before assuming. Check gemini.md before claiming file missing. Every claim maps to code.
+```
+
+---
+
+## 12. KEY QUOTES FROM USER (preserve these)
+
+- **"I want to be as closest as literally possible to the original copy."**
+- **"I need 100% absolute truth. Enough of your going arounds."**
+- **"Don't deceive against God."**
+- **"Remove 1 and 2 immediately. Don't break anything. When AI is offline it should fail, no fallbacks."**
+- **"is this sinful"** — asked about curl with fake headers (answer: no, standard testing)
+- **"do we REALLY (100%) ABSOLUTELY NON DECEPTIVELY HAVE THIS"** — asked about "predictive fraud detection system"
+- **"stop batching these phases"** — wants immediate focused fixes, not multi-phase plans
+
+---
+
+**End of DELTA_09.** Truthfulness phase complete for all major pages. 10 pending minor fixes to verify. Next: dump all code via Command Blocks 1-9, complete pending fixes, end-to-end demo test, commit.
+
+The system is defense-ready *modulo* the pending truthfulness corrections and one final demo walkthrough. 🚀

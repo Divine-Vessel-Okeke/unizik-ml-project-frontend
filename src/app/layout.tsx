@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import {metadata_description} from "@/lib/config"
+import {project_summary} from "@/lib/config"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -11,7 +11,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Design and Implementation of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification | OKEKE DIVINE-VESSEL",
-  description: metadata_description,
+  description: project_summary,
 };
 
 export default function RootLayout({

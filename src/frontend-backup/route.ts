@@ -1,4 +1,4 @@
-// unizik-ml-fraud-frontend/src/app/api/checkout/route.ts
+// src/app/api/checkout/route.ts
 
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';

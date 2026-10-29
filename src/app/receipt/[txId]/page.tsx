@@ -28,10 +28,10 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
             });
           }
         } else {
-          setError(data.error || "Unable to verify this transaction record.");
+          setError(data.error || "Unable to retrieve this transaction record.");
         }
       })
-      .catch(() => setError("Network error while verifying bursary records."))
+      .catch(() => setError("Network error while retrieving receipt."))
       .finally(() => setLoading(false));
   }, [txId]);
 
@@ -41,7 +41,7 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center text-slate-600 font-sans">
         <div className="w-8 h-8 border-3 border-[#001C3D]/20 border-t-[#001C3D] rounded-full animate-spin mb-3" />
-        <span className="text-sm font-semibold tracking-wide text-[#001C3D]">Retrieving Verified e-Receipt...</span>
+        <span className="text-sm font-semibold tracking-wide text-[#001C3D]">Retrieving Receipt...</span>
       </div>
     );
   }
@@ -53,7 +53,7 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
         <main className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
           <div className="bg-white border border-rose-200 rounded-2xl p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-center space-y-4">
             <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto"><AlertCircle className="w-6 h-6" /></div>
-            <h2 className="text-lg font-bold text-slate-900">Receipt Verification Failed</h2>
+            <h2 className="text-lg font-bold text-slate-900">Receipt Retrieval Failed</h2>
             <p className="text-sm text-slate-600 max-w-sm mx-auto">{error}</p>
             <button onClick={() => router.push("/dashboard")} className="mt-4 px-6 py-2.5 bg-[#001C3D] hover:bg-[#00152e] text-white text-xs font-bold rounded-xl transition-all cursor-pointer">Return to Dashboard</button>
           </div>
@@ -77,7 +77,7 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
           <BackButton />
           <button onClick={handlePrint} className="px-5 py-2.5 bg-[#001C3D] hover:bg-[#00152e] active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer">
             <Printer className="w-4 h-4 text-[#F58220]" />
-            <span>Print Official Receipt</span>
+            <span>Print Receipt</span>
           </button>
         </div>
 
@@ -88,13 +88,13 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
               <div className="hidden w-14 h-14 bg-[#001C3D] text-white rounded-xl flex items-center justify-center font-bold text-xl">NAU</div>
               <div>
                 <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-[#001C3D]">NNAMDI AZIKIWE UNIVERSITY, AWKA</h1>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#F58220] block mt-0.5">Office of the Bursar<br />Student Financial Services</span>
-                <span className="text-[11px] text-slate-500 font-medium block mt-1">PMB 5025, Awka, Anambra State, Nigeria</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-[#F58220] block mt-0.5">Department of Computer Science<br />B.Sc. Project</span>
+                <span className="text-[11px] text-slate-500 font-medium block mt-1">Academic Prototype · Awka, Anambra State, Nigeria</span>
               </div>
             </div>
             <div className="sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100 w-full sm:w-auto">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /><span>Verified</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /><span>ML Classified</span>
               </span>
               <div className="text-xs font-mono font-bold text-slate-700">Receipt No: <span className="text-[#001C3D]">{receiptNumber}</span></div>
               <div className="text-[11px] font-mono text-slate-500 mt-0.5">Date: {paymentDate}</div>
@@ -102,7 +102,7 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
           </div>
 
           <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-center mb-8 font-bold text-xs uppercase tracking-widest text-[#001C3D] print:bg-slate-100">
-            Official Student Fee e-Receipt
+            Fee Payment Receipt (Prototype)
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-xs">
@@ -117,9 +117,9 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
             <div className="space-y-3 bg-slate-50/60 p-4 rounded-xl border border-slate-200/60">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block border-b border-slate-200 pb-1">Payment Metadata</span>
               <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Academic Session:</span><span className="font-mono font-bold text-slate-900">{invoice.session}</span></div>
-              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Payment Channel:</span><span className="font-semibold text-slate-700">Remita Educational Gateway</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Payment Channel:</span><span className="font-semibold text-slate-700">Simulated Settlement (Prototype)</span></div>
               <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Payment Reference:</span><span className="font-mono font-bold text-slate-800">{transactionRef}</span></div>
-              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Audit Status:</span><span className="font-bold text-emerald-700">VERIFIED IN LEDGER</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Audit Status:</span><span className="font-bold text-emerald-700">RECORDED IN PROTOTYPE LEDGER</span></div>
             </div>
           </div>
 
@@ -155,19 +155,19 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
               </div>
               <div className="space-y-1 max-w-xs">
                 <span className="text-xs font-bold text-[#001C3D] flex items-center justify-center sm:justify-start gap-1">
-                  <QrCode className="w-3.5 h-3.5 text-[#F58220]" /><span>Online Verification Code</span>
+                  <QrCode className="w-3.5 h-3.5 text-[#F58220]" /><span>QR Code</span>
                 </span>
-                <p className="text-[11px] text-slate-500 leading-relaxed">Scan this code to verify document authenticity directly against central university records.</p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">Scan to view this transaction record on the prototype instance.</p>
                 <div className="text-[10px] font-mono text-slate-400 truncate pt-1">HASH: {invoice.id}</div>
               </div>
             </div>
             <div className="text-center sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100 w-full sm:w-auto">
               <div className="inline-block px-4 py-2 border-2 border-dashed border-emerald-600/60 rounded-xl bg-emerald-50/40 text-emerald-800 mb-2">
-                <span className="block font-extrabold text-[11px] tracking-widest uppercase">BURSARY DEPARTMENT</span>
-                <span className="block font-mono text-[9px] text-emerald-700">ELECTRONICALLY CLEARED</span>
+                <span className="block font-extrabold text-[11px] tracking-widest uppercase">ACADEMIC PROTOTYPE</span>
+                <span className="block font-mono text-[9px] text-emerald-700">ML CLASSIFIED</span>
               </div>
-              <span className="block text-[11px] font-bold text-slate-700">Authorized Bursary Officer</span>
-              <span className="block text-[10px] text-slate-400 italic">Valid without physical signature</span>
+              <span className="block text-[11px] font-bold text-slate-700">B.Sc. Capstone Project</span>
+              <span className="block text-[10px] text-slate-400 italic">Not an official UNIZIK document</span>
             </div>
           </div>
         </div>

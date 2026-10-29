@@ -1,4 +1,4 @@
-// unizik-ml-fraud-frontend/src/lib/fingerprint.ts
+// src/lib/fingerprint.ts
 
 /**
  * Generates an invisible HTML5 Canvas graphic and extracts its data URL.

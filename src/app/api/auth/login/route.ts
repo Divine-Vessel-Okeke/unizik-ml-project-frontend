@@ -5,30 +5,33 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    const { matricNumber, password, deviceId, isAdmin } = await req.json();
-
-    if (!password || (!matricNumber && !isAdmin)) {
-      return NextResponse.json(
-        { success: false, error: "Username/Matriculation Number and password are required." },
-        { status: 400 }
-      );
-    }
+    const { matricNumber, username, password, deviceId, isAdmin } = await req.json();
 
     // --- ADMIN AUTHENTICATION PATH ---
     if (isAdmin) {
-      const admin = await prisma.admin.findUnique({ where: { username: matricNumber } });
+      if (!username || !password) {
+        return NextResponse.json(
+          { success: false, error: "Admin username and password are required." },
+          { status: 400 }
+        );
+      }
+
+      const admin = await prisma.admin.findUnique({ where: { username } });
       if (!admin || !bcrypt.compareSync(password, admin.password)) {
-        return NextResponse.json({ success: false, error: "Invalid Admin credentials." }, { status: 401 });
+        return NextResponse.json(
+          { success: false, error: "Invalid Admin credentials." },
+          { status: 401 }
+        );
       }
 
       const response = NextResponse.json({
         success: true,
-        role: 'ADMIN',
+        role: admin.role,
         user: { id: admin.id, name: admin.fullName },
       });
       response.cookies.set(
         'unizik_session',
-        JSON.stringify({ id: admin.id, role: 'ADMIN', name: admin.fullName }),
+        JSON.stringify({ id: admin.id, role: admin.role, name: admin.fullName }),
         {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -41,6 +44,13 @@ export async function POST(req: Request) {
     }
 
     // --- STUDENT AUTHENTICATION PATH ---
+    if (!matricNumber || !password) {
+      return NextResponse.json(
+        { success: false, error: "Matriculation number and password are required." },
+        { status: 400 }
+      );
+    }
+
     const student = await prisma.student.findUnique({ where: { matricNumber } });
     if (!student || !bcrypt.compareSync(password, student.password)) {
       return NextResponse.json(
@@ -91,7 +101,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("[AUTH ERROR]:", error.message);
     return NextResponse.json(
-      { success: false, error: "Authentication system error." },
+      { success: false, error: "An error occurred." },
       { status: 500 }
     );
   }

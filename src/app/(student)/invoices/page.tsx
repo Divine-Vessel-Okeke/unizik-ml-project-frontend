@@ -9,7 +9,7 @@ import StudentHeader from "@/components/StudentHeader";
 import BackButton from "@/components/BackButton";
 
 const FEE_OPTIONS = [
-  { id: "TUITION", label: "Tuition & Academic Fee", amount: 85500.00, desc: "Mandatory seasonal tuition for undergraduate degree programs." },
+  { id: "TUITION", label: "Tuition Fee", amount: 85500.00, desc: "Mandatory seasonal tuition for undergraduate degree programs." },
   { id: "ACCEPTANCE", label: "Student Acceptance Fee", amount: 45000.00, desc: "One-time clearance fee for newly admitted undergraduates." },
   { id: "ICT_INFRASTRUCTURE", label: "ICT & Portal Maintenance", amount: 15000.00, desc: "Covers Wi-Fi access, digital library, and student portal bandwidth." },
   { id: "EXAM_CLEARANCE", label: "Semester Exam Clearance", amount: 10000.00, desc: "Required fee to generate biometric exam hall permits." },
@@ -99,10 +99,10 @@ export default function InvoiceGeneratorPage() {
             </div>
             <div>
               <h1 className="text-xl font-extrabold text-[#001C3D] tracking-tight">
-                Generate Official Fee Invoice
+                Generate Fee Invoice
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                Select your mandatory institutional fee category for the active academic session.
+                Select an academic session and a fee category.
               </p>
             </div>
           </div>
@@ -122,9 +122,6 @@ export default function InvoiceGeneratorPage() {
                   {user.department} — Level {user.level}
                 </div>
               </div>
-              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold bg-white text-emerald-700 border border-emerald-200/80 px-2.5 py-1 rounded-md shadow-2xs font-mono">
-                VERIFIED IDENTITY
-              </span>
             </div>
 
             {/* Academic Session Selector */}
@@ -138,7 +135,7 @@ export default function InvoiceGeneratorPage() {
     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-sm text-slate-900 font-medium focus:outline-none focus:bg-white focus:border-[#001C3D] focus:ring-2 focus:ring-[#001C3D]/10 transition-all cursor-pointer"
   >
     <option value="2025/2026">2025/2026 Academic Session (Current &amp; Active)</option>
-    <option value="2024/2025">2024/2025 Academic Session (Previous Session Archive)</option>
+    <option value="2024/2025">2024/2025 Academic Session (Historical Record)</option>
     <option value="2023/2024">2023/2024 Academic Session (Historical Record)</option>
     <option value="2022/2023">2022/2023 Academic Session (Historical Record)</option>
     <option value="2021/2022">2021/2022 Academic Session (Historical Record)</option>
@@ -147,7 +144,7 @@ export default function InvoiceGeneratorPage() {
             {/* Fee Category Interactive Cards */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                Fee Schedule & Category Selection
+                Category
               </label>
               <div className="space-y-3">
                 {FEE_OPTIONS.map((option) => {
@@ -217,7 +214,7 @@ export default function InvoiceGeneratorPage() {
                 </>
               ) : (
                 <>
-                  <span>Generate Invoice & Pay (₦{selectedFee.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })})</span>
+                  <span>Generate Invoice (₦{selectedFee.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })})</span>
                 </>
               )}
             </button>
