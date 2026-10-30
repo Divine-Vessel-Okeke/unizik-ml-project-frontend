@@ -19,7 +19,7 @@ export async function getNetworkRiskScore(rawIp: string): Promise<number> {
     ip.startsWith('::ffff:172.16.');
 
   if (isLocalOrPrivate) {
-    console.log('[NETWORK] Local/private IP detected → ASN risk = 0 (SAFE)');
+    console.log('[NETWORK] Local/private IP detected → ASN risk = 0');
     return 0;
   }
 
@@ -50,7 +50,7 @@ export async function getNetworkRiskScore(rawIp: string): Promise<number> {
     const isLocalTelco = telcos.some(telco => ispName.includes(telco));
 
     const result = isLocalTelco ? 0 : 1;
-    console.log('[NETWORK] ISP:', ispName, '→ ASN risk =', result, isLocalTelco ? '(local telco)' : '(foreign/unknown)');
+    console.log('[NETWORK] ISP:', ispName, '→ ASN risk =', result, isLocalTelco ? '(local telco)' : '(not in major Nigerian telco list)');
     return result;
   } catch (e: any) {
     clearTimeout(timeoutId);

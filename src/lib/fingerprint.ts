@@ -34,7 +34,8 @@ function getCanvasFingerprint(): string {
 }
 
 /**
- * Simple, fast SHA-256 equivalent hashing function (DJB2a / FNV-1a hybrid)
+ * Simple, fast DJB2 variant string hash function.
+ * Produces a 32-bit hex string, not a cryptographic hash.
  * Converts long raw browser metadata strings into clean, uppercase hexadecimal strings.
  */
 function hashString(str: string): string {
@@ -49,9 +50,9 @@ function hashString(str: string): string {
 }
 
 /**
- * HARVESTING ENGINE
- * Combines physical machine specs (screen, CPU, OS) with browser engine signatures
- * (User-Agent, Canvas render) to produce a deterministic, browser-unique fingerprint.
+ * FINGERPRINT GENERATOR
+ * Combines browser-exposed screen metrics, navigator properties, and a canvas
+ * render into a deterministic string.
  */
 export async function generateDeviceFingerprint(): Promise<string> {
   if (typeof window === "undefined") {
@@ -62,18 +63,18 @@ export async function generateDeviceFingerprint(): Promise<string> {
     const nav = window.navigator;
     const screen = window.screen;
 
-    // 1. Physical Hardware Metrics (Same across browsers on same computer)
+    // 1. Browser-exposed screen and device metrics
     const screenRes = `${screen.width}x${screen.height}x${screen.colorDepth}`;
     const cpuCores = nav.hardwareConcurrency || 2;
     const platform = nav.platform || "UNKNOWN_PLATFORM";
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
-    // 2. Browser Engine Metrics (Different across Chrome, Edge, Firefox, etc.)
+    // 2. Browser-exposed navigator and canvas metrics
     const userAgent = nav.userAgent || "UNKNOWN_AGENT";
     const language = nav.language || "en-US";
     const canvasData = getCanvasFingerprint();
 
-    // 3. Assemble complete raw signature payload
+    // 3. Assemble raw input string
     const rawSignature = [
       screenRes,
       cpuCores,
@@ -84,10 +85,10 @@ export async function generateDeviceFingerprint(): Promise<string> {
       canvasData,
     ].join("||");
 
-    // 4. Generate clean institutional cryptographic anchor
+    // 4. Hash the raw input into a short identifier
     const uniqueHash = hashString(rawSignature);
 
-    // Identify browser type for readable prefixing during presentation
+    // Identify browser type for readable prefix
     let browserPrefix = "WEB";
     if (userAgent.includes("Edg/")) browserPrefix = "EDGE";
     else if (userAgent.includes("Chrome/")) browserPrefix = "CHROME";
@@ -96,7 +97,7 @@ export async function generateDeviceFingerprint(): Promise<string> {
 
     return `UNIZIK_FP_${browserPrefix}_${uniqueHash}`;
   } catch (err) {
-    console.error("[FINGERPRINT HARVEST ERROR]:", err);
+    console.error("[FINGERPRINT GENERATION ERROR]:", err);
     return `UNIZIK_FP_FALLBACK_${Date.now().toString(16).toUpperCase()}`;
   }
 }

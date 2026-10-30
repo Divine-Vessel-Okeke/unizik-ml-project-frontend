@@ -56,7 +56,7 @@ export async function evaluatePaymentTransaction(
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   try {
-    // 1. LIVE DATABASE AGGREGATION
+    // 1. DATABASE AGGREGATION
     const distinctStudentsOnDevice = await prisma.transaction.findMany({
       where: {
         deviceId: payload.deviceId,
@@ -165,7 +165,7 @@ export async function evaluatePaymentTransaction(
       throw new Error(`AI_ENGINE_UNAVAILABLE: ${mlError.message}`);
     }
 
-    // 5. ATOMIC LEDGER EXECUTION
+    // 5. ATOMIC TRANSACTION WRITE
     const targetStatus: TransactionStatus =
       aiVerdict === 'FRAUDULENT' ? TransactionStatus.BLOCKED : TransactionStatus.CLEARED;
 
@@ -210,7 +210,7 @@ export async function evaluatePaymentTransaction(
       return txn;
     });
 
-    console.log("[FRAUD-ENGINE] Final ledger write:", {
+    console.log("[FRAUD-ENGINE] Final transaction write:", {
       transactionId: createdTransaction.id,
       status: targetStatus,
       verdict: aiVerdict,
