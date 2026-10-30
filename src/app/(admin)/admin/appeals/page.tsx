@@ -1,19 +1,21 @@
-// src/app/admin/appeals/page.tsx
+// src/app/(admin)/admin/appeals/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, XCircle, CheckCircle2, AlertTriangle, RefreshCw, Cpu, FileText, Search, Filter, ChevronDown, ChevronUp, Clock, User, CreditCard } from "lucide-react";
+import { ShieldCheck, XCircle, CheckCircle2, AlertTriangle, RefreshCw, Cpu, FileText, Search, ChevronDown, ChevronUp, Clock, User } from "lucide-react";
 import AdminHeader from "@/components/AdminHeader";
 import BackButton from "@/components/BackButton";
+import { MSG } from "@/lib/messages";
+import { isAdminRole } from "@/lib/roles";
 
 export default function AdminAppealsPage() {
   const router = useRouter();
   const [appeals, setAppeals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  
-  // UI State Controls for Enterprise Filtering & High-Density Layout
+
+  // Filter, search, and modal state
   const [filterStatus, setFilterStatus] = useState<"ALL" | "PENDING" | "APPROVED" | "REJECTED">("PENDING");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export default function AdminAppealsPage() {
       return;
     }
     const parsedUser = JSON.parse(storedUser);
-    if (parsedUser.role !== "ADMIN" && parsedUser.role !== "BURSARY_DIRECTOR") {
+    if (!isAdminRole(parsedUser.role)) {
       router.push("/dashboard");
       return;
     }
@@ -48,7 +50,7 @@ export default function AdminAppealsPage() {
 
   const handleAction = async (appealId: string, status: "APPROVED" | "REJECTED") => {
     setActionLoading(appealId);
-    const noteText = `Manual executive override executed by Chief Bursar on ${new Date().toLocaleDateString()}`;
+    const noteText = `Admin decision recorded on ${new Date().toLocaleDateString()}`;
 
     try {
       const res = await fetch("/api/appeals", {
@@ -62,8 +64,7 @@ export default function AdminAppealsPage() {
       });
 
       if (res.ok) {
-        // Optimistic in-place update — no full-table refetch, no flash.
-        // Just mutate the affected appeal; React re-renders only that row.
+        // Update only the affected row after server confirms — no full-table refetch, no flash.
         setAppeals((prev) =>
           prev.map((a) =>
             a.id === appealId ? { ...a, status, adminNotes: noteText } : a
@@ -72,10 +73,10 @@ export default function AdminAppealsPage() {
         setExpandedId(null);
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || "Action failed. Please try again.");
+        alert(data.error || MSG.GENERIC_ERROR);
       }
     } catch {
-      alert("Network error while submitting action.");
+      alert(MSG.GENERIC_ERROR);
     } finally {
       setActionLoading(null);
     }
@@ -85,7 +86,7 @@ export default function AdminAppealsPage() {
     if (!rejectModal) return;
     const finalReason =
       rejectReason.trim() ||
-      "Verification failed institutional security audit. Please visit the Bursary desk.";
+      `Rejected by admin on ${new Date().toLocaleDateString()}.`;
 
     setActionLoading(rejectModal.id);
     try {
@@ -100,7 +101,7 @@ export default function AdminAppealsPage() {
       });
 
       if (res.ok) {
-        // Optimistic in-place update — no flash
+        // Update only the affected row after server confirms — no flash.
         setAppeals((prev) =>
           prev.map((a) =>
             a.id === rejectModal.id
@@ -113,19 +114,19 @@ export default function AdminAppealsPage() {
         setExpandedId(null);
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || "Rejection failed. Please try again.");
+        alert(data.error || MSG.GENERIC_ERROR);
       }
     } catch {
-      alert("Network error while submitting rejection.");
+      alert(MSG.GENERIC_ERROR);
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Multi-Word Tokenized Search (Handles "fname lname", "lname fname", or matric number)
+  // Multi-word search across student fields and fee category
   const filteredAppeals = appeals.filter((item) => {
     const matchesStatus = filterStatus === "ALL" || item.status === filterStatus;
-    
+
     const combinedSearchIndex = [
       item.student?.firstName || "",
       item.student?.lastName || "",
@@ -138,7 +139,7 @@ export default function AdminAppealsPage() {
 
     const searchWords = searchQuery.trim().toLowerCase().split(/\s+/);
     const matchesSearch = searchWords.every((word) => combinedSearchIndex.includes(word));
-    
+
     return matchesStatus && matchesSearch;
   });
 
@@ -156,17 +157,17 @@ export default function AdminAppealsPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16 selection:bg-[#001C3D] selection:text-white">
       <AdminHeader />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <BackButton />
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-[#001C3D] tracking-tight">
-              Appeal &amp; Dispute Queue
+              Appeals
             </h1>
             <p className="text-xs text-slate-500 mt-1 font-medium">
-              Human-in-the-loop governance. Unblocking restores student checkout routing without erasing forensic audit trails.
+              Admins can approve or reject appeals. Approval sets the invoice back to PENDING so the student can retry checkout. Audit logs are not deleted.
             </p>
           </div>
           <button
@@ -175,7 +176,7 @@ export default function AdminAppealsPage() {
             className="self-start md:self-auto px-4 py-2.5 bg-white border border-slate-200/80 hover:border-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-[#F58220] ${loading ? "animate-spin" : ""}`} />
-            <span>Refresh Queue</span>
+            <span>Refresh</span>
           </button>
         </div>
 
@@ -184,25 +185,25 @@ export default function AdminAppealsPage() {
             {(["PENDING", "ALL", "APPROVED", "REJECTED"] as const).map((tab) => {
               const isActive = filterStatus === tab;
               const badgeCount = counts[tab];
-              
+
               return (
                 <button
                   key={tab}
                   onClick={() => setFilterStatus(tab)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                    isActive 
-                      ? "bg-[#001C3D] text-white shadow-sm" 
+                    isActive
+                      ? "bg-[#001C3D] text-white shadow-sm"
                       : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
                   }`}
                 >
                   <span>
                     {tab === "ALL" ? "All Appeals" :
                      tab === "PENDING" ? "Pending Review" :
-                     tab === "APPROVED" ? "Approved Overrides" : "Rejected Disputes"}
+                     tab === "APPROVED" ? "Approved" : "Rejected"}
                   </span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                    isActive 
-                      ? "bg-[#F58220] text-white font-extrabold" 
+                    isActive
+                      ? "bg-[#F58220] text-white font-extrabold"
                       : "bg-slate-200/80 text-slate-700"
                   }`}>
                     {badgeCount}
@@ -222,7 +223,7 @@ export default function AdminAppealsPage() {
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#001C3D] focus:ring-2 focus:ring-[#001C3D]/10 transition-all"
             />
             {searchQuery && (
-              <button 
+              <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
               >
@@ -236,12 +237,11 @@ export default function AdminAppealsPage() {
           {loading ? (
             <div className="p-16 text-center text-slate-400 font-medium flex flex-col items-center justify-center gap-3">
               <div className="w-6 h-6 border-2 border-[#001C3D]/20 border-t-[#001C3D] rounded-full animate-spin" />
-              <span className="text-xs font-semibold">Querying administrative dispute ledger...</span>
+              <span className="text-xs font-semibold">Loading appeals...</span>
             </div>
           ) : filteredAppeals.length === 0 ? (
             <div className="p-16 text-center text-slate-400 font-medium space-y-1">
               <div className="text-sm font-bold text-slate-600">No matching appeals found</div>
-              <p className="text-xs">Try adjusting your filter tabs or clearing your search query.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -251,8 +251,8 @@ export default function AdminAppealsPage() {
                     <th className="py-3.5 px-6">Student Identification</th>
                     <th className="py-3.5 px-6">Fee Obligation</th>
                     <th className="py-3.5 px-6">Status</th>
-                    <th className="py-3.5 px-6">Forensics &amp; Reason</th>
-                    <th className="py-3.5 px-6 text-right">Executive Action</th>
+                    <th className="py-3.5 px-6">Details</th>
+                    <th className="py-3.5 px-6 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -262,11 +262,14 @@ export default function AdminAppealsPage() {
                     const auditLog = item.transaction?.auditLog;
                     const invoice = item.transaction?.invoice;
                     const student = item.student;
+                    const confidenceText = auditLog?.confidence != null
+                      ? `${(auditLog.confidence * 100).toFixed(1)}%`
+                      : "N/A";
 
                     return (
                       <React.Fragment key={item.id}>
                         <tr className={`hover:bg-blue-50/30 transition-colors ${isExpanded ? "bg-blue-50/20" : ""}`}>
-                          
+
                           <td className="py-4 px-6">
                             <div className="font-extrabold text-[#001C3D] text-sm flex items-center gap-1.5">
                               <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -288,9 +291,9 @@ export default function AdminAppealsPage() {
 
                           <td className="py-4 px-6">
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                              item.status === "APPROVED" 
+                              item.status === "APPROVED"
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-                              item.status === "REJECTED" 
+                              item.status === "REJECTED"
                                 ? "bg-rose-50 text-rose-700 border border-rose-200" :
                                 "bg-amber-50 text-amber-800 border border-amber-200/80 animate-pulse"
                             }`}>
@@ -305,13 +308,13 @@ export default function AdminAppealsPage() {
                             <button
                               onClick={() => toggleExpand(item.id)}
                               className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                                isExpanded 
-                                  ? "bg-[#001C3D] text-white border-[#001C3D]" 
+                                isExpanded
+                                  ? "bg-[#001C3D] text-white border-[#001C3D]"
                                   : "bg-slate-100/80 text-slate-700 border-slate-200/80 hover:bg-slate-200"
                               }`}
                             >
                               <Cpu className={`w-3.5 h-3.5 ${isExpanded ? "text-[#F58220]" : "text-slate-500"}`} />
-                              <span>{isExpanded ? "Hide Telemetry" : "View Telemetry & Reason"}</span>
+                              <span>{isExpanded ? "Hide Details" : "View Details"}</span>
                               {isExpanded ? <ChevronUp className="w-3 h-3 ml-0.5" /> : <ChevronDown className="w-3 h-3 ml-0.5" />}
                             </button>
                           </td>
@@ -335,7 +338,7 @@ export default function AdminAppealsPage() {
                                   className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1 disabled:opacity-50"
                                 >
                                   <ShieldCheck className="w-3.5 h-3.5" />
-                                  <span>Approve &amp; Unblock</span>
+                                  <span>Approve</span>
                                 </button>
                               </div>
                             ) : (
@@ -350,13 +353,13 @@ export default function AdminAppealsPage() {
                           <tr className="bg-slate-50/80 border-b border-slate-200 shadow-inner animate-in fade-in duration-150">
                             <td colSpan={5} className="p-6">
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                
-                                {/* Student Remediation Request & Bursar Feedback */}
+
+                                {/* Student's reason & admin notes */}
                                 <div className="bg-white border border-slate-200/80 p-5 rounded-xl shadow-2xs space-y-3">
                                   <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                                     <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#001C3D] flex items-center gap-1.5">
                                       <FileText className="w-3.5 h-3.5 text-blue-600" />
-                                      <span>Student Remediation Explanation</span>
+                                      <span>Student&apos;s Reason</span>
                                     </span>
                                     <span className="text-[10px] text-slate-400 font-mono font-medium">
                                       Submitted: {new Date(item.createdAt).toLocaleString()}
@@ -370,7 +373,7 @@ export default function AdminAppealsPage() {
                                     <div className="pt-2 border-t border-slate-100 space-y-1.5">
                                       <span className="text-[10px] font-bold uppercase tracking-widest text-rose-700 block flex items-center gap-1">
                                         <AlertTriangle className="w-3 h-3 text-rose-600" />
-                                        <span>Bursar Executive Feedback:</span>
+                                        <span>Admin Notes:</span>
                                       </span>
                                       <p className="text-xs text-rose-950 font-medium leading-relaxed bg-rose-50/80 p-3.5 rounded-lg border border-rose-200/60 font-sans">
                                         {item.adminNotes}
@@ -379,19 +382,19 @@ export default function AdminAppealsPage() {
                                   )}
                                 </div>
 
-                                {/* White-Box XAI Telemetry Log */}
+                                {/* AI explanation */}
                                 <div className="bg-rose-50/40 border border-rose-200/80 p-5 rounded-xl shadow-2xs space-y-2.5">
                                   <div className="flex items-center justify-between border-b border-rose-200/60 pb-2.5">
                                     <span className="text-[11px] font-extrabold uppercase tracking-widest text-rose-900 flex items-center gap-1.5">
                                       <Cpu className="w-3.5 h-3.5 text-rose-600" />
-                                      <span>Automated AI Intercept Telemetry</span>
+                                      <span>AI Explanation</span>
                                     </span>
                                     <span className="text-[10px] font-bold text-rose-800 bg-rose-100/80 border border-rose-200 px-2 py-0.5 rounded font-mono">
-                                      CONFIDENCE: {( (auditLog?.confidence || 0.985) * 100 ).toFixed(1)}%
+                                      CONFIDENCE: {confidenceText}
                                     </span>
                                   </div>
                                   <p className="text-xs text-rose-950 font-semibold leading-relaxed bg-white/80 p-3.5 rounded-lg border border-rose-200/60 font-mono">
-                                    {auditLog?.explanation || "Automated Fraud Engine: Detected device hardware fingerprint mismatch alongside anomalous low-dwell page telemetry from an unverified ASN route."}
+                                    {auditLog?.explanation || "No AI explanation recorded."}
                                   </p>
                                 </div>
 
@@ -408,11 +411,11 @@ export default function AdminAppealsPage() {
           )}
         </div>
 
-        {/* Bursar Quick-Select Rejection Modal */}
+        {/* Rejection modal */}
         {rejectModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
             <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-              
+
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="text-base font-extrabold text-[#001C3D] flex items-center gap-2">
@@ -423,7 +426,7 @@ export default function AdminAppealsPage() {
                     Student: <span className="font-bold text-slate-800">{rejectModal.studentName}</span>
                   </p>
                 </div>
-                <button 
+                <button
                   onClick={() => setRejectModal(null)}
                   className="text-slate-400 hover:text-slate-600 font-bold text-sm px-2 py-1 rounded-lg bg-slate-100 cursor-pointer"
                 >
@@ -433,13 +436,13 @@ export default function AdminAppealsPage() {
 
               <div className="space-y-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Quick-Select Standard Reasons:
+                  Quick-Select Reasons:
                 </span>
                 <div className="grid grid-cols-1 gap-1.5">
                   {[
-                    "Unexplained device hardware mismatch against baseline registration token.",
-                    "Anomalous automated routing or VPN detected during checkout attempt.",
-                    "Visit the Bursar unit physically to explain yourself.",
+                    "Device fingerprint does not match login baseline.",
+                    "Network origin not among the 5 major Nigerian telcos (MTN, Glo, Airtel, 9Mobile, Etisalat) during checkout attempt.",
+                    "Visit the admin office to explain.",
                   ].map((template, idx) => (
                     <button
                       key={idx}
@@ -455,7 +458,7 @@ export default function AdminAppealsPage() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-700 block">
-                  Custom Bursar Feedback Note:
+                  Custom Admin Note:
                 </label>
                 <textarea
                   rows={3}

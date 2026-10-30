@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { evaluatePaymentTransaction } from '@/lib/fraud-engine';
 import { getNetworkRiskScore } from '@/lib/network-risk';
+import { MSG } from '@/lib/messages';
 
 const overrideFeaturesSchema = z.object({
   device_student_count_24h: z.number().int().min(0).max(150).optional(),
@@ -53,10 +54,10 @@ export async function POST(req: Request) {
 
     const invoice = await prisma.feeInvoice.findUnique({ where: { id: payload.invoiceId } });
     if (!invoice || invoice.studentId !== payload.studentId || invoice.amount !== payload.amount) {
-      return NextResponse.json({ success: false, error: "Invalid or Tampered Invoice" }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Invoice details do not match." }, { status: 403 });
     }
     if (invoice.status === 'PAID') {
-      return NextResponse.json({ success: false, error: "This fee invoice has already been cleared and marked as PAID in the university records." }, { status: 400 });
+      return NextResponse.json({ success: false, error: "This invoice is already PAID." }, { status: 400 });
     }
 
     const engineResult = await evaluatePaymentTransaction(payload);
@@ -85,29 +86,29 @@ export async function POST(req: Request) {
         data: { status: 'BLOCKED' as any }
       });
 
+      // Response field `forensicReport` preserved for client compatibility —
+      // it contains the ML verdict result object.
       return NextResponse.json({ success: false, message: "Blocked", forensicReport: engineResult }, { status: 403 });
     }
 
-    return NextResponse.json({ success: true, message: "Authorized", data: { id: tx.id } }, { status: 200 });
+    return NextResponse.json({ success: true, message: "Cleared", data: { id: tx.id } }, { status: 200 });
   } catch (error: any) {
     console.error("[CHECKOUT ROUTE ERROR]:", error.message);
 
-    // AI service was unreachable — do NOT touch the DB, return 503 so student retries
     if (error.message?.startsWith('AI_ENGINE_UNAVAILABLE')) {
       return NextResponse.json({
         success: false,
-        error: "AI verification service is currently unavailable. No payment was processed. Please retry in a moment."
+        error: "AI service is unavailable. No transaction was created."
       }, { status: 503 });
     }
 
-    // Network intelligence service unreachable
     if (error.message?.startsWith('NETWORK_LOOKUP_UNAVAILABLE')) {
       return NextResponse.json({
         success: false,
-        error: "Network verification service is currently unavailable. No payment was processed. Please retry in a moment."
+        error: "Network service is unavailable. No transaction was created."
       }, { status: 503 });
     }
 
-    return NextResponse.json({ success: false, error: "Internal Error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }

@@ -5,21 +5,22 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TrendingUp, AlertTriangle, FileText, Activity, ArrowUpRight } from "lucide-react";
 import AdminHeader from "@/components/AdminHeader";
+import { isAdminRole } from "@/lib/roles";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    // Basic admin session check
+    // Enforce admin-only access — non-admins are redirected
     const storedUser = localStorage.getItem("unizik_user");
     if (!storedUser) {
       router.push("/login");
       return;
     }
-    
+
     const parsedUser = JSON.parse(storedUser);
-    if (parsedUser.role !== "ADMIN" && parsedUser.role !== "BURSARY_DIRECTOR") {
+    if (!isAdminRole(parsedUser.role)) {
       router.push("/dashboard");
       return;
     }
@@ -35,7 +36,7 @@ export default function AdminDashboard() {
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center text-slate-600 font-sans">
         <div className="w-8 h-8 border-3 border-[#001C3D]/20 border-t-[#001C3D] rounded-full animate-spin mb-3" />
         <span className="text-sm font-semibold tracking-wide text-[#001C3D]">
-          Loading Administrative Ledger...
+          Loading dashboard...
         </span>
       </div>
     );
@@ -48,13 +49,13 @@ export default function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         
-        {/* Top-Level Financial Metrics */}
+        {/* Summary metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Total Cleared Revenue
+                Total Cleared Amount
               </span>
               <TrendingUp className="w-4 h-4 text-emerald-500" />
             </div>
@@ -76,28 +77,28 @@ export default function AdminDashboard() {
           </div>
 
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between">
-  <div className="flex items-center justify-between mb-2">
-    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-      Audit Engine Status
-    </span>
-    <Activity className={`w-4 h-4 ${
-      data.mlHealth?.status === 'ONLINE' ? 'text-emerald-500' :
-      data.mlHealth?.status === 'DEGRADED' ? 'text-amber-500' :
-      'text-rose-500'
-    }`} />
-  </div>
-  <div className="text-xl font-extrabold text-[#001C3D] mt-2">
-    {data.mlHealth?.status === 'ONLINE' ? 'Active & Monitoring' :
-     data.mlHealth?.status === 'DEGRADED' ? 'Model Missing' :
-     data.mlHealth?.status === 'OFFLINE' ? 'AI Service Offline' :
-     data.mlHealth?.status === 'UNKNOWN' ? 'Status Unknown' :
-     'Checking...'}
-  </div>
-</div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                AI Engine Status
+              </span>
+              <Activity className={`w-4 h-4 ${
+                data.mlHealth?.status === 'ONLINE' ? 'text-emerald-500' :
+                data.mlHealth?.status === 'DEGRADED' ? 'text-amber-500' :
+                'text-rose-500'
+              }`} />
+            </div>
+            <div className="text-xl font-extrabold text-[#001C3D] mt-2">
+              {data.mlHealth?.status === 'ONLINE' ? 'Online' :
+               data.mlHealth?.status === 'DEGRADED' ? 'Model Missing' :
+               data.mlHealth?.status === 'OFFLINE' ? 'AI Service Offline' :
+               data.mlHealth?.status === 'UNKNOWN' ? 'Status Unknown' :
+               'Unknown'}
+            </div>
+          </div>
 
         </div>
 
-        {/* Global Transaction Ledger */}
+        {/* Transactions */}
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden">
           
           <div className="p-6 border-b border-slate-200/80 bg-slate-50/50 flex justify-between items-center">
@@ -107,7 +108,7 @@ export default function AdminDashboard() {
                 <span>Student Payment Registry &amp; Audit Records</span>
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Monitoring student financial status and automated bursary verification logs.
+                Transaction records and AI audit notes.
               </p>
             </div>
             
@@ -135,18 +136,21 @@ export default function AdminDashboard() {
                 {data.transactions?.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-slate-400 font-medium">
-                      No transaction records found in the current audit period.
+                      No transaction records found.
                     </td>
                   </tr>
                 ) : (
                   data.transactions?.map((tx: any) => {
                     const isBlocked = tx.status === 'BLOCKED' || tx.status === 'DECLINED';
+                    const auditText =
+                      tx.auditLog?.explanation ||
+                      (isBlocked ? "Blocked — no audit entry" : "No audit entry");
                     return (
                       <tr 
                         key={tx.id} 
                         onClick={() => router.push(`/admin/forensics/${tx.id}`)}
                         className="hover:bg-blue-50/60 transition-colors duration-150 cursor-pointer group"
-                        title="Click row to inspect White-Box XAI forensic report"
+                        title="Click row to open transaction forensics"
                       >
                         <td className="py-4 px-6 text-slate-500 font-mono group-hover:text-[#001C3D] transition-colors">
                           {new Date(tx.createdAt).toLocaleString("en-NG", { 
@@ -170,7 +174,7 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-4 px-6 text-slate-500 max-w-[250px] truncate group-hover:text-slate-800 transition-colors">
                           <span className="flex items-center justify-between">
-                            <span className="truncate">{tx.auditLog?.explanation || "Standard Clearance"}</span>
+                            <span className="truncate">{auditText}</span>
                             <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 text-[#F58220] transition-opacity shrink-0 ml-2" />
                           </span>
                         </td>

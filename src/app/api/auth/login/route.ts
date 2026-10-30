@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { MSG } from '@/lib/messages';
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
       const admin = await prisma.admin.findUnique({ where: { username } });
       if (!admin || !bcrypt.compareSync(password, admin.password)) {
         return NextResponse.json(
-          { success: false, error: "Invalid Admin credentials." },
+          { success: false, error: "Invalid Admin Username or Password." },
           { status: 401 }
         );
       }
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("[AUTH ERROR]:", error.message);
     return NextResponse.json(
-      { success: false, error: "An error occurred." },
+      { success: false, error: MSG.GENERIC_ERROR },
       { status: 500 }
     );
   }

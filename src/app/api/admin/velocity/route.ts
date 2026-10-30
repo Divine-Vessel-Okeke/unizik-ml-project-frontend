@@ -1,6 +1,7 @@
 // src/app/api/admin/velocity/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MSG } from '@/lib/messages';
 
 export async function GET() {
   try {
@@ -16,7 +17,7 @@ export async function GET() {
     const deviceMap = new Map<string, any>();
 
     for (const tx of transactions) {
-      const deviceId = tx.deviceId || "UNKNOWN_COMPUTER";
+      const deviceId = tx.deviceId || "UNKNOWN_DEVICE";
 
       if (!deviceMap.has(deviceId)) {
         deviceMap.set(deviceId, {
@@ -62,16 +63,14 @@ export async function GET() {
       }
     }
 
-    const computers = Array.from(deviceMap.values()).map(item => {
+    const devices = Array.from(deviceMap.values()).map(item => {
       const studentCount = item.studentsMap.size;
       const blockedCount = item.blockedCount;
       const clearedCount = item.clearedCount;
 
-      // A device is "suspicious" if blocked attempts outnumber cleared attempts.
-      // Single-attempt devices (0 cleared, 1 blocked) are also suspicious — the
-      // previous "blockedCount >= 2" threshold silently hid fresh fraud attempts
-      // and mislabeled them as "Personal Computer ✓".
-      const isSuspicious = blockedCount >= 1 && blockedCount > clearedCount;
+      // Flag devices where blocked attempts outnumber cleared attempts
+      // (includes devices with 1 block and 0 clears).
+      const hasMoreBlocksThanClears = blockedCount >= 1 && blockedCount > clearedCount;
 
       return {
         deviceId: item.deviceId,
@@ -80,23 +79,21 @@ export async function GET() {
         blockedCount,
         lastActive: item.lastActive,
         studentCount,
-        isSuspicious,
+        isSuspicious: hasMoreBlocksThanClears,
         studentsList: Array.from(item.studentsMap.values())
       };
     });
 
-    // Sort: suspicious devices FIRST (surface fraud signals), then by student count.
-    // Previously sorted only by studentCount, which buried red-flagged devices
-    // below normal cybercafes — directly contradicting the Bursar Guide banner.
-    computers.sort((a, b) => {
+    // Sort: flagged devices first, then by student count (descending).
+    devices.sort((a, b) => {
       if (a.isSuspicious && !b.isSuspicious) return -1;
       if (!a.isSuspicious && b.isSuspicious) return 1;
       return b.studentCount - a.studentCount;
     });
 
-    return NextResponse.json({ success: true, computers }, { status: 200 });
+    return NextResponse.json({ success: true, computers: devices }, { status: 200 });
   } catch (error: any) {
-    console.error("[FETCH COMPUTERS ERROR]:", error.message);
-    return NextResponse.json({ success: false, error: "Failed to load computer tracking data." }, { status: 500 });
+    console.error("[ADMIN VELOCITY ERROR]:", error.message);
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }

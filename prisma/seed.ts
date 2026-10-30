@@ -29,7 +29,7 @@ async function main() {
     },
   });
 
-  // 3. Create Student 1: Normal Undergraduate Profile (Chinedu)
+  // 3. Create Student 1: Normal Undergraduate Account (Chinedu)
   const student1 = await prisma.student.create({
     data: {
       matricNumber: '2022514001',
@@ -53,7 +53,7 @@ async function main() {
     },
   });
 
-  // 4. Create Student 2: High-Risk Attack Target Profile (Sohail)
+  // 4. Create Student 2: High-Risk Attack Target Account (Sohail)
   const student2 = await prisma.student.create({
     data: {
       matricNumber: '2022514009',

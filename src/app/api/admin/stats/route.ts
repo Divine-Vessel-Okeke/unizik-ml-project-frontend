@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MSG } from '@/lib/messages';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,10 +14,10 @@ interface MLHealth {
   message: string;
 }
 
-// Prefer ML_ENGINE_BASEURL (already in .env), else derive from ML_ENGINE_URL, else hardcoded localhost
+// Prefer ML_ENGINE_BASEURL; strip /api/predict from ML_ENGINE_URL as fallback; else localhost default
 function getMLBaseUrl(): string {
   const baseUrl = process.env.ML_ENGINE_BASEURL;
-  if (baseUrl) return baseUrl.replace(/\/+$/, ''); // strip trailing slashes
+  if (baseUrl) return baseUrl.replace(/\/+$/, '');
 
   const predictUrl = process.env.ML_ENGINE_URL || 'http://127.0.0.1:5000/api/predict';
   return predictUrl.replace(/\/api\/predict\/?$/, '');
@@ -66,17 +67,23 @@ async function checkMLEngineHealth(): Promise<MLHealth> {
       };
     }
   } catch (err: any) {
+    const message =
+      err.name === 'AbortError'
+        ? 'AI service timeout'
+        : err.name === 'SyntaxError'
+          ? 'AI service returned invalid JSON response'
+          : 'AI service unreachable';
     return {
       status: 'OFFLINE',
       modelStatus: 'UNKNOWN',
-      message: err.name === 'AbortError' ? 'AI service timeout' : 'AI service unreachable',
+      message,
     };
   }
 }
 
 export async function GET() {
   try {
-    // Run DB query and health check in parallel — don't block dashboard on health timeout
+    // Fetch transactions and ML health in parallel
     const [transactions, mlHealth] = await Promise.all([
       prisma.transaction.findMany({
         include: { student: true, auditLog: true },
@@ -85,18 +92,25 @@ export async function GET() {
       checkMLEngineHealth(),
     ]);
 
-    const totalRevenue = transactions
+    const totalClearedAmount = transactions
       .filter(t => t.status === 'CLEARED')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const fraudCount = await prisma.transaction.count({ where: { status: 'BLOCKED' } });
+    const blockedTransactionCount = await prisma.transaction.count({ where: { status: 'BLOCKED' } });
 
+    // Response keys `totalRevenue` / `fraudCount` are preserved for API compatibility
+    // with the admin dashboard client — renaming them requires a coordinated client update.
     return NextResponse.json({
       success: true,
-      stats: { totalRevenue, fraudCount, transactions, mlHealth }
+      stats: {
+        totalRevenue: totalClearedAmount,
+        fraudCount: blockedTransactionCount,
+        transactions,
+        mlHealth,
+      }
     });
   } catch (error: any) {
     console.error('[ADMIN STATS ERROR]:', error.message);
-    return NextResponse.json({ success: false, error: "Failed to fetch admin stats" }, { status: 500 });
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }

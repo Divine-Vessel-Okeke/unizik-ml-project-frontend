@@ -3,9 +3,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { FeeCategory, InvoiceStatus } from '@prisma/client';
+import { MSG } from '@/lib/messages';
 
-// Official UNIZIK Fee Schedule (Server-Enforced to prevent client-side price tampering)
-const OFFICIAL_FEE_SCHEDULE: Record<FeeCategory, number> = {
+// Fee schedule enforced server-side — client cannot set the amount
+const FEE_SCHEDULE: Record<FeeCategory, number> = {
   TUITION: 85500.00,
   ACCEPTANCE: 45000.00,
   ICT_INFRASTRUCTURE: 15000.00,
@@ -13,32 +14,31 @@ const OFFICIAL_FEE_SCHEDULE: Record<FeeCategory, number> = {
   EXAM_CLEARANCE: 10000.00,
 };
 
-// GET: Fetch all invoices for a specific student UUID
+// GET: Fetch invoices for a student, or a single invoice by id
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get('studentId');
     const invoiceId = searchParams.get('invoiceId');
-    
+
     if (invoiceId) {
-        // PRE-FLIGHT GUARDRAIL (gemini.md L111868 + L111985):
-        // Include transactions + auditLog + appeal so the checkout page can
-        // detect BLOCKED transactions and approved appeals before rendering
-        // the payment form.
-        const invoice = await prisma.feeInvoice.findUnique({
-          where: { id: invoiceId },
-          include: {
-            transactions: {
-              orderBy: { createdAt: 'desc' },
-              take: 1,
-              include: {
-                auditLog: true,
-                appeal: true,
-              },
+      // Pre-flight guardrail: include transactions + auditLog + appeal so the
+      // checkout page can detect BLOCKED transactions and approved appeals
+      // before rendering the payment form.
+      const invoice = await prisma.feeInvoice.findUnique({
+        where: { id: invoiceId },
+        include: {
+          transactions: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            include: {
+              auditLog: true,
+              appeal: true,
             },
           },
-        });
-        return NextResponse.json({ success: true, invoice });
+        },
+      });
+      return NextResponse.json({ success: true, invoice });
     }
     if (!studentId) {
       return NextResponse.json({ success: false, error: "Student UUID is required." }, { status: 400 });
@@ -50,13 +50,11 @@ export async function GET(req: Request) {
       include: {
         transactions: {
           orderBy: { createdAt: 'desc' },
-          take: 1, // Include the most recent transaction attempt for status indicator
-          // --- START FRAGMENT: CRITICAL NESTED JOIN ---
-          // Why: Forces Prisma to attach the Appeal object so the Student UI can evaluate PENDING/REJECTED states
+          take: 1,
+          // Attach appeal status so the student UI can evaluate it
           include: {
             appeal: true,
           },
-          // --- END FRAGMENT ---
         }
       }
     });
@@ -64,11 +62,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: true, invoices }, { status: 200 });
   } catch (error: any) {
     console.error("[FETCH INVOICES ERROR]:", error.message);
-    return NextResponse.json({ success: false, error: "Failed to load student ledger." }, { status: 500 });
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }
 
-// POST: Generate a new tamper-proof invoice with Zero-Trust state checking
+// POST: Create an invoice, checking existing invoice state first
 export async function POST(req: Request) {
   try {
     const { studentId, category, session } = await req.json();
@@ -77,13 +75,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Student ID, Fee Category, and Session are required." }, { status: 400 });
     }
 
-    if (!(category in OFFICIAL_FEE_SCHEDULE)) {
-      return NextResponse.json({ success: false, error: "Invalid university fee category selected." }, { status: 400 });
+    if (!(category in FEE_SCHEDULE)) {
+      return NextResponse.json({ success: false, error: "Invalid fee category selected." }, { status: 400 });
     }
 
-    const amount = OFFICIAL_FEE_SCHEDULE[category as FeeCategory];
+    const amount = FEE_SCHEDULE[category as FeeCategory];
 
-    // CRITICAL FIX: Check if an invoice ALREADY exists in ANY state (PAID, PENDING, or BLOCKED)
+    // Check whether an invoice already exists for this student/category/session
     const existingInvoice = await prisma.feeInvoice.findFirst({
       where: {
         studentId,
@@ -96,25 +94,22 @@ export async function POST(req: Request) {
     });
 
     if (existingInvoice) {
-      // 1. If already PAID: Block new generation
       if (existingInvoice.status === InvoiceStatus.PAID) {
         return NextResponse.json({
           success: false,
-          error: "This fee category has already been paid and cleared for the selected academic session.",
+          error: "This invoice is already PAID for the selected academic session.",
           isCleared: true,
         }, { status: 400 });
       }
 
-      // 2. If under SECURITY HOLD (BLOCKED): Forbid generation! Force them to appeal!
       if (existingInvoice.status === InvoiceStatus.BLOCKED) {
         return NextResponse.json({
           success: false,
-          error: "This fee obligation is currently suspended under a Bursary Security Hold. You must submit an administrative verification appeal before a new transaction can be initiated.",
+          error: "This invoice is BLOCKED. Submit an appeal before creating a new transaction.",
           isBlocked: true,
         }, { status: 403 });
       }
 
-      // 3. If PENDING: Return the existing pending invoice instead of creating a duplicate
       if (existingInvoice.status === InvoiceStatus.PENDING) {
         return NextResponse.json({
           success: true,
@@ -125,7 +120,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Create new invoice in SQLite ledger ONLY if no obligation exists for this session
+    // Create new invoice only if no existing invoice matches this student/category/session
     const newInvoice = await prisma.feeInvoice.create({
       data: {
         studentId,
@@ -144,6 +139,6 @@ export async function POST(req: Request) {
     }, { status: 201 });
   } catch (error: any) {
     console.error("[CREATE INVOICE ERROR]:", error.message);
-    return NextResponse.json({ success: false, error: "Failed to generate billing invoice." }, { status: 500 });
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }

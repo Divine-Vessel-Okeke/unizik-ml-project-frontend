@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { getNetworkRiskScore } from '@/lib/network-risk';
 import { TransactionStatus } from '@prisma/client';
+import { MSG } from '@/lib/messages';
 
 // 60s cache for ASN lookups — prevents panel polling from hammering ip-api.com
 const asnCache = new Map<string, { value: number; expiresAt: number }>();
@@ -30,9 +31,8 @@ function isOffPeakHourWAT(): number {
 }
 
 /**
- * Diagnostic endpoint — returns LIVE values for the 4 server-computable ML features.
+ * Diagnostic endpoint — returns current values for 4 of the 6 ML features.
  * Client tracks the remaining 2 (page_dwell_time_seconds, session_hardware_mismatch).
- *
  * Polled by the DiagnosticsPanel every 5 seconds.
  */
 export async function GET(req: Request) {
@@ -93,7 +93,7 @@ export async function GET(req: Request) {
   } catch (error: any) {
     console.error('[TELEMETRY ERROR]:', error.message);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch telemetry' },
+      { success: false, error: MSG.GENERIC_ERROR },
       { status: 500 }
     );
   }

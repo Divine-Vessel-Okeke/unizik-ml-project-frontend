@@ -102,7 +102,7 @@ Save this as `CONTEXT_HANDOFF.md` on your machine. When you start the new chat, 
 
 Also worth checking if referenced by login/dashboard:
 - `src/app/(student)/dashboard/page.tsx` — Gemini referenced this path too; the real one is `app/dashboard/page.tsx`
-- `src/app/register/page.tsx` — linked from login ("Register New Undergraduate Profile")
+- `src/app/register/page.tsx` — linked from login ("Register New Undergraduate Account")
 - `src/app/admin/dashboard/page.tsx` — admin redirect target
 - `src/app/api/auth/login/route.ts` — login endpoint (may be missing)
 
@@ -1665,7 +1665,7 @@ async function main() {
     },
   });
 
-  // 3. Create Student 1: Normal Undergraduate Profile (Chinedu)
+  // 3. Create Student 1: Normal Undergraduate Account (Chinedu)
   const student1 = await prisma.student.create({
     data: {
       matricNumber: '2022514001',
@@ -1689,7 +1689,7 @@ async function main() {
     },
   });
 
-  // 4. Create Student 2: High-Risk Attack Target Profile (Sohail)
+  // 4. Create Student 2: High-Risk Attack Target Account (Sohail)
   const student2 = await prisma.student.create({
     data: {
       matricNumber: '2022514009',
@@ -1739,7 +1739,7 @@ main()
 
 **Seed credentials:**
 
-| Matric | Role | Password | Profile |
+| Matric | Role | Password | Account |
 |--------|------|----------|---------|
 | `admin` | `BURSARY_DIRECTOR` | `admin123` | Dr. Prof. B.O. Ekeh |
 | `2022514001` | `STUDENT` | `password123` | Chinedu Okafor · L400 · TUITION ₦85,500 PENDING |
@@ -2156,7 +2156,7 @@ async function main() {
     },
   });
 
-  // 3. Create Student 1: Normal Undergraduate Profile (Chinedu)
+  // 3. Create Student 1: Normal Undergraduate Account (Chinedu)
   const student1 = await prisma.student.create({
     data: {
       matricNumber: '2022514001',
@@ -2180,7 +2180,7 @@ async function main() {
     },
   });
 
-  // 4. Create Student 2: High-Risk Attack Target Profile (Sohail)
+  // 4. Create Student 2: High-Risk Attack Target Account (Sohail)
   const student2 = await prisma.student.create({
     data: {
       matricNumber: '2022514009',
@@ -5081,7 +5081,7 @@ EOF
 - Flags: `HttpOnly; SameSite=strict; Max-Age=86400`
 
 ### localStorage keys:
-- `unizik_user` — full student/admin profile JSON
+- `unizik_user` — full student/admin account JSON
 - `unizik_device_id` — session device fingerprint (optional)
 
 ---

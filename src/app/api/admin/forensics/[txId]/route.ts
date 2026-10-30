@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MSG } from '@/lib/messages';
 
 export async function GET(
   req: Request,
@@ -40,7 +41,7 @@ export async function GET(
 
     if (!transaction) {
       return NextResponse.json(
-        { success: false, error: "Forensic record not found in university ledger." },
+        { success: false, error: "Transaction not found." },
         { status: 404 }
       );
     }
@@ -49,7 +50,7 @@ export async function GET(
   } catch (error: any) {
     console.error("[FORENSICS API ERROR]:", error.message);
     return NextResponse.json(
-      { success: false, error: "Failed to query forensic telemetry database." },
+      { success: false, error: MSG.GENERIC_ERROR },
       { status: 500 }
     );
   }

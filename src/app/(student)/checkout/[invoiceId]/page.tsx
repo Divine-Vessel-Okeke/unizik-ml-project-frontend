@@ -3,11 +3,12 @@
 
 import React, { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard, AlertCircle, RefreshCw, Lock, Building2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, RefreshCw, Lock, Building2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { generateDeviceFingerprint } from "@/lib/fingerprint";
 import StudentHeader from "@/components/StudentHeader";
 import BackButton from "@/components/BackButton";
 import DiagnosticsPanel, { DiagnosticsValues } from "@/components/DiagnosticsPanel";
+import { MSG } from "@/lib/messages";
 
 export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: string }> }) {
   const router = useRouter();
@@ -41,9 +42,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
       .then((data) => {
         if (data.success) {
           const latestTx = data.invoice.transactions?.[0];
-          const isTxBlocked =
-            latestTx &&
-            (latestTx.status === "BLOCKED" || latestTx.status === "DECLINED");
+          const isTxBlocked = latestTx && latestTx.status === "BLOCKED";
           const isAppealApproved = latestTx?.appeal?.status === "APPROVED";
 
           if (isTxBlocked && !isAppealApproved) {
@@ -52,18 +51,18 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
             setInvoice(data.invoice);
           }
         } else {
-          setPaymentError("Unable to load billing details for this invoice.");
+          setPaymentError(data.error || MSG.GENERIC_ERROR);
         }
       })
-      .catch(() => setPaymentError("Network communication error with the central ledger."));
+      .catch(() => setPaymentError(MSG.GENERIC_ERROR));
 
-    // CRITICAL: always set deviceId, even on failure. Panel depends on it.
+    // Always set deviceId, even on failure — the diagnostics panel reads it
     const initTelemetry = async () => {
       let fp = "";
       try {
         fp = await generateDeviceFingerprint();
       } catch (e) {
-        console.error("[CHECKOUT] Fingerprint failed:", e);
+        console.error("[CHECKOUT] Fingerprint generation failed:", e);
         fp = "UNIZIK_FP_UNAVAILABLE";
       }
       setDeviceId(fp);
@@ -131,13 +130,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
       if (res.ok && data.success) {
         const txId = data.data.id;
         router.push(`/receipt/${txId}`);
-      } else if (res.status === 403 || data.message === "Blocked" || data.verdict === "FRAUDULENT") {
+      } else if (res.status === 403 || data.message === "Blocked" || data.forensicReport?.verdict === "FRAUDULENT") {
         setInvoice((prev: any) => ({ ...prev, status: "BLOCKED" }));
       } else {
-        setPaymentError(data.error || data.message || "Transaction declined by payment review.");
+        setPaymentError(data.error || data.message || MSG.GENERIC_ERROR);
       }
     } catch (err) {
-      setPaymentError("A network error occurred while processing your transaction.");
+      setPaymentError(MSG.GENERIC_ERROR);
     } finally {
       setProcessing(false);
     }
@@ -166,11 +165,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
             </div>
             <div className="space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#F58220] block">
-                Nnamdi Azikiwe University Bursary
+                Invoice Status
               </span>
-              <h1 className="text-xl font-extrabold text-[#001C3D]">Payment Cleared</h1>
+              <h1 className="text-xl font-extrabold text-[#001C3D]">Invoice PAID</h1>
               <p className="text-xs text-slate-500 font-medium">
-                This fee invoice has already been processed and verified in the university records.
+                This invoice is already PAID.
               </p>
             </div>
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-left space-y-2 text-xs">
@@ -183,7 +182,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
                 <span className="font-semibold text-slate-700 font-mono">{invoice.session}</span>
               </div>
               <div className="flex justify-between border-t border-slate-200/60 pt-2">
-                <span className="text-slate-500 font-medium">Amount Settled:</span>
+                <span className="text-slate-500 font-medium">Amount:</span>
                 <span className="font-extrabold text-emerald-600 font-mono">
                   ₦{invoice.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
                 </span>
@@ -213,11 +212,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
             </div>
             <div className="space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-widest text-rose-700 block">
-                Security Verification Required
+                Payment Blocked
               </span>
               <h1 className="text-xl font-extrabold text-[#001C3D]">Payment Attempt Blocked</h1>
               <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
-                Our security system paused this payment because it detected unusual activity from your device or internet connection. This is a safety measure to protect student accounts from unauthorized access or cybercafe fraud.
+                The fraud detection model blocked this payment attempt. Submit an appeal if you believe this was a mistake.
               </p>
             </div>
             <div className="pt-2">
@@ -225,7 +224,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
                 onClick={() => router.push(`/support/appeal?invoiceId=${invoiceId}`)}
                 className="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>Request Review from Bursary</span>
+                <span>Request Admin Review</span>
               </button>
             </div>
           </div>
@@ -286,7 +285,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
               <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-start gap-3 font-semibold animate-in fade-in duration-200">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
                 <div className="space-y-0.5">
-                  <span className="block font-bold text-rose-900">Transaction Notice</span>
+                  <span className="block font-bold text-rose-900">Error</span>
                   <span className="leading-relaxed font-normal">{paymentError}</span>
                 </div>
               </div>
@@ -300,7 +299,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
               {processing ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Processing Authorization...</span>
+                  <span>Processing...</span>
                 </>
               ) : (
                 <>
@@ -314,7 +313,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ invoiceId: 
         </div>
       </main>
 
-      {/* Diagnostics panel — renders as soon as user is known, regardless of deviceId */}
       {user && (
         <DiagnosticsPanel
           studentId={user.id}

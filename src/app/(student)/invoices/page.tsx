@@ -4,16 +4,17 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, ArrowLeft, Shield, AlertCircle, RefreshCw, Lock, Check } from "lucide-react";
+import { FileText, AlertCircle, RefreshCw, Lock, Check } from "lucide-react";
 import StudentHeader from "@/components/StudentHeader";
 import BackButton from "@/components/BackButton";
+import { MSG } from "@/lib/messages";
 
 const FEE_OPTIONS = [
   { id: "TUITION", label: "Tuition Fee", amount: 85500.00, desc: "Mandatory seasonal tuition for undergraduate degree programs." },
   { id: "ACCEPTANCE", label: "Student Acceptance Fee", amount: 45000.00, desc: "One-time clearance fee for newly admitted undergraduates." },
-  { id: "ICT_INFRASTRUCTURE", label: "ICT & Portal Maintenance", amount: 15000.00, desc: "Covers Wi-Fi access, digital library, and student portal bandwidth." },
-  { id: "EXAM_CLEARANCE", label: "Semester Exam Clearance", amount: 10000.00, desc: "Required fee to generate biometric exam hall permits." },
-  { id: "LIBRARY", label: "Library Development Fee", amount: 5000.00, desc: "Access to physical and online IEEE/ACM research repositories." },
+  { id: "ICT_INFRASTRUCTURE", label: "ICT & Portal Maintenance", amount: 15000.00, desc: "Institutional fee for ICT infrastructure and student portal maintenance." },
+  { id: "EXAM_CLEARANCE", label: "Semester Exam Clearance", amount: 10000.00, desc: "Institutional fee for semester examination clearance." },
+  { id: "LIBRARY", label: "Library Development Fee", amount: 5000.00, desc: "Institutional fee for library development and resource access." },
 ];
 
 export default function InvoiceGeneratorPage() {
@@ -55,13 +56,13 @@ export default function InvoiceGeneratorPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        // Redirect directly to the real-time telemetry checkout page
+        // Navigate to checkout
         router.push(`/checkout/${data.invoice.id}`);
       } else {
-        setError(data.error || "Failed to generate invoice.");
+        setError(data.error || MSG.GENERIC_ERROR);
       }
     } catch (err) {
-      setError("Network error while communicating with billing server.");
+      setError(MSG.GENERIC_ERROR);
     } finally {
       setLoading(false);
     }
@@ -72,7 +73,7 @@ export default function InvoiceGeneratorPage() {
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center text-slate-600 font-sans">
         <div className="w-8 h-8 border-3 border-[#001C3D]/20 border-t-[#001C3D] rounded-full animate-spin mb-3" />
         <span className="text-sm font-semibold tracking-wide text-[#001C3D]">
-          Loading Billing Engine...
+          Loading...
         </span>
       </div>
     );
@@ -81,18 +82,16 @@ export default function InvoiceGeneratorPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16 selection:bg-[#001C3D] selection:text-white">
       
-      {/* Reusable Institutional Header Component */}
+      {/* Student header */}
       <StudentHeader user={user} />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         
-        {/* Back Navigation */}
         <BackButton />
 
-        {/* Main Vercel-Style Form Card */}
+        {/* Form card */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
           
-          {/* Header Section */}
           <div className="flex items-center gap-3.5 border-b border-slate-100 pb-6 mb-6">
             <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 text-[#001C3D] shrink-0">
               <FileText className="w-6 h-6 text-[#F58220]" />
@@ -109,11 +108,10 @@ export default function InvoiceGeneratorPage() {
 
           <form onSubmit={handleCreateInvoice} className="space-y-6">
             
-            {/* Registered Student Profile Box */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 flex items-start justify-between gap-4">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-[#001C3D]" /> Registered Student Profile
+                  <Lock className="w-3 h-3 text-[#001C3D]" /> Registered Student Account
                 </span>
                 <div className="text-[#001C3D] font-extrabold text-sm sm:text-base">
                   {user.name} <span className="font-mono text-slate-500 font-semibold">({user.matricNumber})</span>
@@ -124,24 +122,23 @@ export default function InvoiceGeneratorPage() {
               </div>
             </div>
 
-            {/* Academic Session Selector */}
             <div>
-  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-    Academic Session
-  </label>
-  <select
-    value={session}
-    onChange={(e) => setSession(e.target.value)}
-    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-sm text-slate-900 font-medium focus:outline-none focus:bg-white focus:border-[#001C3D] focus:ring-2 focus:ring-[#001C3D]/10 transition-all cursor-pointer"
-  >
-    <option value="2025/2026">2025/2026 Academic Session (Current &amp; Active)</option>
-    <option value="2024/2025">2024/2025 Academic Session (Historical Record)</option>
-    <option value="2023/2024">2023/2024 Academic Session (Historical Record)</option>
-    <option value="2022/2023">2022/2023 Academic Session (Historical Record)</option>
-    <option value="2021/2022">2021/2022 Academic Session (Historical Record)</option>
-  </select>
-</div>
-            {/* Fee Category Interactive Cards */}
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                Academic Session
+              </label>
+              <select
+                value={session}
+                onChange={(e) => setSession(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-sm text-slate-900 font-medium focus:outline-none focus:bg-white focus:border-[#001C3D] focus:ring-2 focus:ring-[#001C3D]/10 transition-all cursor-pointer"
+              >
+                <option value="2025/2026">2025/2026 Academic Session (Current &amp; Active)</option>
+                <option value="2024/2025">2024/2025 Academic Session (Historical Record)</option>
+                <option value="2023/2024">2023/2024 Academic Session (Historical Record)</option>
+                <option value="2022/2023">2022/2023 Academic Session (Historical Record)</option>
+                <option value="2021/2022">2021/2022 Academic Session (Historical Record)</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
                 Category
@@ -185,15 +182,6 @@ export default function InvoiceGeneratorPage() {
               </div>
             </div>
 
-            {/* Institutional Billing Notice */}
-            {/* <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5 shadow-2xs font-medium">
-              <Shield className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">
-                <strong className="font-bold">Official University Schedule:</strong> Fee amounts are standardized by the university administration. All billing records are verified against central portal records during checkout.
-              </span>
-            </div> */}
-
-            {/* Error Banner */}
             {error && (
               <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2 font-semibold animate-in fade-in duration-200">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
@@ -201,7 +189,6 @@ export default function InvoiceGeneratorPage() {
               </div>
             )}
 
-            {/* Submit Execution Button */}
             <button
               type="submit"
               disabled={loading}
@@ -210,7 +197,7 @@ export default function InvoiceGeneratorPage() {
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Generating Billing Invoice...</span>
+                  <span>Generating Invoice...</span>
                 </>
               ) : (
                 <>

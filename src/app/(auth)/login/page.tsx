@@ -5,13 +5,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, User, ArrowRight, AlertCircle } from "lucide-react";
 import { generateDeviceFingerprint } from "@/lib/fingerprint";
-
-const ADMIN_ROLES = [
-  "BURSARY_OFFICER",
-  "BURSARY_DIRECTOR",
-  "ICT_DIRECTOR",
-  "AUDIT_OFFICER",
-];
+import { MSG } from "@/lib/messages";
+import { isAdminRole } from "@/lib/roles";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,7 +49,7 @@ export default function LoginPage() {
       if (res.ok && data.success) {
         const serverRole = data.role;
         if (!serverRole) {
-          setError("An error occurred.");
+          setError(MSG.GENERIC_ERROR);
           return;
         }
 
@@ -63,16 +58,16 @@ export default function LoginPage() {
 
         if (serverRole === "STUDENT") {
           router.push("/dashboard");
-        } else if (ADMIN_ROLES.includes(serverRole)) {
+        } else if (isAdminRole(serverRole)) {
           router.push("/admin/dashboard");
         } else {
-          setError("An error occurred.");
+          setError(MSG.GENERIC_ERROR);
         }
       } else {
-        setError(data.error || "An error occurred.");
+        setError(data.error || MSG.GENERIC_ERROR);
       }
     } catch (err) {
-      setError("An error occurred.");
+      setError(MSG.GENERIC_ERROR);
     } finally {
       setLoading(false);
     }

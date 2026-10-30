@@ -1,5 +1,8 @@
+// src/app/api/receipt/[txId]/route.ts
+
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MSG } from '@/lib/messages';
 
 export async function GET(
   req: Request,
@@ -38,16 +41,16 @@ export async function GET(
     });
 
     if (!invoice) {
-      return NextResponse.json({ success: false, error: "No matching payment record found in university bursary records." }, { status: 404 });
+      return NextResponse.json({ success: false, error: "No matching invoice found." }, { status: 404 });
     }
 
     if (invoice.status !== 'PAID') {
-      return NextResponse.json({ success: false, error: "This invoice has not been marked as PAID. Official receipt cannot be generated." }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Receipt cannot be generated for an invoice that is not PAID." }, { status: 403 });
     }
 
     return NextResponse.json({ success: true, invoice }, { status: 200 });
   } catch (error: any) {
     console.error("[RECEIPT API ERROR]:", error.message);
-    return NextResponse.json({ success: false, error: "Internal server error while retrieving receipt data." }, { status: 500 });
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }

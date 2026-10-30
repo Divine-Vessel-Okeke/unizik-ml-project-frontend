@@ -10,7 +10,7 @@ export default function AdminHeader() {
   const pathname = usePathname();
   const [pendingAppealsCount, setPendingAppealsCount] = useState<number>(0);
 
-  // Silently fetch pending appeals count for the navigation badge
+  // Fetch pending appeals count for the navigation badge
   useEffect(() => {
     fetch("/api/appeals")
       .then((res) => res.json())
@@ -31,27 +31,26 @@ export default function AdminHeader() {
   const navLinks = [
     { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
     { label: "All Transactions", href: "/admin/transactions", icon: FileText },
-    { 
-      label: "Dispute Queue", 
-      href: "/admin/appeals", 
-      icon: AlertCircle, 
-      badge: pendingAppealsCount > 0 ? pendingAppealsCount : null 
+    {
+      label: "Appeals",
+      href: "/admin/appeals",
+      icon: AlertCircle,
+      badge: pendingAppealsCount > 0 ? pendingAppealsCount : null,
     },
-    { label: "Campus Computers", href: "/admin/velocity", icon: Laptop },
+    { label: "Device Activity", href: "/admin/velocity", icon: Laptop },
   ];
 
   return (
     <>
-      {/* Top Academic Research Notice Bar */}
+      {/* Project Title Bar */}
       <div className="bg-[#001C3D] text-white px-4 py-1.5 text-center text-[11px] font-medium tracking-wide flex items-center justify-center gap-2">
         <Cpu className="w-3.5 h-3.5 text-[#F58220] shrink-0" />
         <span>Design and Implementation of a Predictive Fraud Detection System for University E-payment Portals using Decision Tree Classification | OKEKE DIVINE-VESSEL</span>
       </div>
 
       <header className="bg-white border-b border-slate-200/80 sticky top-0 z-20 shadow-2xs">
-        {/* Main Branding & Clearance Bar */}
+        {/* Main Header Bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-          
           {/* Brand & Logo Section */}
           <div className="flex items-center gap-3">
             <img
@@ -71,16 +70,16 @@ export default function AdminHeader() {
                 NNAMDI AZIKIWE UNIVERSITY
               </span>
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#F58220] block mt-0.5">
-                Bursary Administrative Portal
+                Administrative Portal
               </span>
             </div>
           </div>
 
-          {/* Admin Clearance & Sign Out */}
+          {/* Admin Badge & Sign Out */}
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 text-xs font-bold text-[#001C3D] bg-blue-50/80 px-3 py-1.5 rounded-xl border border-blue-100">
               <ShieldAlert className="w-3.5 h-3.5 text-[#F58220]" />
-              <span>Bursary Officer</span>
+              <span>Admin</span>
             </div>
             <button
               onClick={handleLogout}
@@ -93,12 +92,12 @@ export default function AdminHeader() {
           </div>
         </div>
 
-        {/* Responsive Institutional Navigation Strip */}
+        {/* Admin Navigation Strip */}
         <nav className="bg-slate-50/80 border-t border-slate-200/80 px-4 sm:px-6 lg:px-8 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = pathname === link.href || pathname?.startsWith(`${link.href}/`);
-            
+
             return (
               <button
                 key={link.href}

@@ -2,8 +2,9 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MSG } from '@/lib/messages';
 
-// GET: Fetch appeals for Admin or specific Student
+// GET: List appeals, optionally filtered by studentId
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -28,63 +29,64 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, appeals }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('[APPEALS GET ERROR]:', error.message);
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }
 
-// POST: Student submits a dispute (Hardened against duplicate @unique collisions)
+// POST: Submit or resubmit an appeal for a blocked transaction
 export async function POST(req: Request) {
   try {
     const { studentId, invoiceId, reason } = await req.json();
 
     if (!studentId || !invoiceId || !reason) {
-      return NextResponse.json({ success: false, error: "Missing required dispute parameters." }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Missing required fields." }, { status: 400 });
     }
 
-    // 1. Find the latest blocked transaction associated with this invoice
+    // 1. Find the latest blocked transaction for this invoice
     const tx = await prisma.transaction.findFirst({
       where: { invoiceId, studentId, status: 'BLOCKED' },
       orderBy: { createdAt: 'desc' }
     });
 
     if (!tx) {
-      return NextResponse.json({ success: false, error: "No blocked transaction record found for this obligation." }, { status: 404 });
+      return NextResponse.json({ success: false, error: "No blocked transaction found for this invoice." }, { status: 404 });
     }
 
-    // 2. CRITICAL PRE-FLIGHT CHECK: Query if an appeal record already exists for this transaction
+    // 2. Query whether an appeal already exists for this transaction
     const existingAppeal = await prisma.appeal.findUnique({
       where: { transactionId: tx.id }
     });
 
     if (existingAppeal) {
-  if (existingAppeal.status === 'PENDING') {
-    return NextResponse.json({ 
-      success: false, 
-      error: "A verification appeal has already been submitted for this security hold and is currently active in the Chief Bursar's review queue." 
-    }, { status: 400 });
-  }
+      if (existingAppeal.status === 'PENDING') {
+        return NextResponse.json({
+          success: false,
+          error: "An appeal for this blocked transaction is already pending."
+        }, { status: 400 });
+      }
 
-  if (existingAppeal.status === 'APPROVED') {
-    return NextResponse.json({ 
-      success: false, 
-      error: "This security hold has already been cleared by an administrative override. No further appeal is required." 
-    }, { status: 400 });
-  }
+      if (existingAppeal.status === 'APPROVED') {
+        return NextResponse.json({
+          success: false,
+          error: "This appeal was already approved."
+        }, { status: 400 });
+      }
 
-  // Only REJECTED reaches this branch — legitimate resubmission
-  const resubmittedAppeal = await prisma.appeal.update({
+      // Only REJECTED reaches this branch
+      const resubmittedAppeal = await prisma.appeal.update({
         where: { transactionId: tx.id },
         data: {
           reason,
           status: 'PENDING',
-          adminNotes: null // Clear out old admin rejection notes
+          adminNotes: null
         }
       });
 
       return NextResponse.json({ success: true, appeal: resubmittedAppeal, message: "Appeal resubmitted successfully." }, { status: 200 });
     }
 
-    // 3. Create fresh appeal ONLY if no prior record exists for this transaction ID
+    // 3. Create fresh appeal if no prior record exists
     const appeal = await prisma.appeal.create({
       data: {
         transactionId: tx.id,
@@ -97,14 +99,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, appeal }, { status: 201 });
   } catch (error: any) {
     console.error("[APPEAL SUBMISSION ERROR]:", error.message);
-    return NextResponse.json({ success: false, error: "Failed to transmit appeal to administrative ledger." }, { status: 500 });
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }
 
-// PATCH: Admin approves override or rejects with feedback notes
+// PATCH: Admin approves or rejects an appeal
 export async function PATCH(req: Request) {
   try {
-    const { appealId, status, adminNotes } = await req.json(); // status: 'APPROVED' | 'REJECTED'
+    const { appealId, status, adminNotes } = await req.json();
 
     const appeal = await prisma.appeal.findUnique({
       where: { id: appealId },
@@ -112,18 +114,17 @@ export async function PATCH(req: Request) {
     });
 
     if (!appeal) {
-      return NextResponse.json({ success: false, error: "Dispute record not found." }, { status: 404 });
+      return NextResponse.json({ success: false, error: "Appeal not found." }, { status: 404 });
     }
 
-    // Execute atomic update
     await prisma.$transaction(async (tx) => {
-      // 1. Update Appeal state and save Bursar feedback notes
+      // 1. Update appeal status and admin notes
       await tx.appeal.update({
         where: { id: appealId },
         data: { status, adminNotes }
       });
 
-      // 2. If approved, unlock the parent Invoice so student can pay again!
+      // 2. If approved, set the parent invoice back to PENDING
       if (status === 'APPROVED' && appeal.transaction?.invoiceId) {
         await tx.feeInvoice.update({
           where: { id: appeal.transaction.invoiceId },
@@ -132,8 +133,9 @@ export async function PATCH(req: Request) {
       }
     });
 
-    return NextResponse.json({ success: true, message: `Dispute successfully ${status.toLowerCase()}.` }, { status: 200 });
+    return NextResponse.json({ success: true, message: `Appeal ${status.toLowerCase()}.` }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('[APPEALS PATCH ERROR]:', error.message);
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }

@@ -34,7 +34,7 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        // Save user profile to local storage for quick UI rendering
+        // Save user account to local storage for quick UI rendering
         localStorage.setItem("unizik_user", JSON.stringify(data.user));
         
         // Redirect to appropriate domain
@@ -167,7 +167,7 @@ export default function LoginPage() {
           <p className="mt-4 text-center text-xs text-slate-400">
             Don't have a student portal account yet?{" "}
             <a href="/register" className="text-indigo-400 hover:underline font-medium">
-              Register New Undergraduate Profile
+              Register New Undergraduate Account
             </a>
           </p>
         )}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Search, Filter, RefreshCw, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import AdminHeader from "@/components/AdminHeader";
 import BackButton from "@/components/BackButton";
+import { isAdminRole } from "@/lib/roles";
 
 const FEE_CATEGORIES = [
   { id: "ALL", label: "All Fee Categories" },
@@ -31,7 +32,7 @@ export default function AdminTransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter States
+  // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
@@ -42,7 +43,6 @@ export default function AdminTransactionsPage() {
   const [totalRecords, setTotalRecords] = useState(0);
   const [pageSize, setPageSize] = useState(15);
 
-  // Fetch ledger
   const fetchLedger = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -73,21 +73,15 @@ export default function AdminTransactionsPage() {
     }
   }, [selectedStatus, selectedCategory, searchTerm, currentPage, pageSize]);
 
+  // Enforce admin-only access and load transactions
   useEffect(() => {
-    fetchLedger();
-  }, [fetchLedger]);
-
-  useEffect(() => {
-    // Authorization Check
     const storedUser = localStorage.getItem("unizik_user");
     if (!storedUser) {
       router.push("/login");
       return;
     }
     const parsedUser = JSON.parse(storedUser);
-    const userRole = parsedUser.role || (parsedUser.username ? "BURSARY_DIRECTOR" : "STUDENT");
-
-    if (userRole !== "ADMIN" && userRole !== "BURSARY_DIRECTOR") {
+    if (!isAdminRole(parsedUser.role)) {
       router.push("/dashboard");
       return;
     }
@@ -107,14 +101,13 @@ export default function AdminTransactionsPage() {
     setCurrentPage(1);
   };
 
-  // Dynamic Ledger Metrics based on active view
-  const totalClearedRevenue = transactions
+  // Summary metrics for the current page
+  const totalClearedAmount = transactions
     .filter((tx) => tx.status === "CLEARED")
     .reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
-  const blockedCount = transactions.filter((tx) => tx.status === "BLOCKED").length;
+  const blockedOnPage = transactions.filter((tx) => tx.status === "BLOCKED").length;
 
-  // Derived "showing X–Y of Z" numbers
   const showingFrom = transactions.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const showingTo = Math.min(currentPage * pageSize, totalRecords);
 
@@ -125,18 +118,15 @@ export default function AdminTransactionsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
 
-        {/* Navigation Back Button */}
         <BackButton />
 
-
-        {/* Page Title & Context Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-[#001C3D] tracking-tight">
-              Bursary Financial Ledger &amp; Audit Engine
+              All Transactions
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-              Comprehensive audit trail of undergraduate payment authorizations and decision-tree fraud intercepts.
+              Paginated transaction records with AI explanations where available.
             </p>
           </div>
 
@@ -147,35 +137,33 @@ export default function AdminTransactionsPage() {
               className="px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              <span>Refresh Ledger</span>
+              <span>Refresh</span>
             </button>
           </div>
         </div>
 
-        {/* Dynamic Ledger Summary Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-2xs flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Filtered Records</span>
-            <span className="text-lg font-extrabold text-[#001C3D] font-mono">{transactions.length}</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Matching Records</span>
+            <span className="text-lg font-extrabold text-[#001C3D] font-mono">{totalRecords}</span>
           </div>
           <div className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-2xs flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Cleared Revenue View</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Cleared Amount (this page)</span>
             <span className="text-lg font-extrabold text-emerald-600 font-mono">
-              ₦{totalClearedRevenue.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+              ₦{totalClearedAmount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
             </span>
           </div>
           <div className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-2xs flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Intercepted Attempts</span>
-            <span className="text-lg font-extrabold text-rose-600 font-mono">{blockedCount}</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Blocked (this page)</span>
+            <span className="text-lg font-extrabold text-rose-600 font-mono">{blockedOnPage}</span>
           </div>
         </div>
 
-        {/* Filtering Engine Toolbar */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] mb-8 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-[#001C3D] flex items-center gap-1.5">
               <Filter className="w-3.5 h-3.5 text-[#F58220]" />
-              <span>Ledger Filtering Parameters</span>
+              <span>Filters</span>
             </span>
             {(searchTerm || selectedStatus !== "ALL" || selectedCategory !== "ALL") && (
               <button
@@ -188,7 +176,6 @@ export default function AdminTransactionsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            {/* Search Box */}
             <div className="md:col-span-6 relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <Search className="w-4 h-4" />
@@ -203,7 +190,6 @@ export default function AdminTransactionsPage() {
               />
             </div>
 
-            {/* Status Dropdown */}
             <div className="md:col-span-3">
               <select
                 value={selectedStatus}
@@ -216,7 +202,6 @@ export default function AdminTransactionsPage() {
               </select>
             </div>
 
-            {/* Fee Category Dropdown */}
             <div className="md:col-span-3">
               <select
                 value={selectedCategory}
@@ -231,7 +216,6 @@ export default function AdminTransactionsPage() {
           </div>
         </div>
 
-        {/* Error Notification */}
         {error && (
           <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-6 text-xs font-semibold text-rose-700 flex items-center gap-2.5 shadow-2xs">
             <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
@@ -239,7 +223,6 @@ export default function AdminTransactionsPage() {
           </div>
         )}
 
-        {/* Tabular Financial Ledger */}
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
@@ -250,8 +233,8 @@ export default function AdminTransactionsPage() {
                   <th className="py-3.5 px-6">Fee Category</th>
                   <th className="py-3.5 px-6">Reference No.</th>
                   <th className="py-3.5 px-6 text-right">Amount (₦)</th>
-                  <th className="py-3.5 px-6 text-center">Clearance Status</th>
-                  <th className="py-3.5 px-6">Audit Verdict &amp; Remarks</th>
+                  <th className="py-3.5 px-6 text-center">Status</th>
+                  <th className="py-3.5 px-6">AI Explanation</th>
                   <th className="py-3.5 px-6 text-right">Action</th>
                 </tr>
               </thead>
@@ -259,7 +242,7 @@ export default function AdminTransactionsPage() {
                 {loading && transactions.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
-                      Querying Bursary database...
+                      Loading transactions...
                     </td>
                   </tr>
                 ) : transactions.length === 0 ? (
@@ -270,9 +253,10 @@ export default function AdminTransactionsPage() {
                   </tr>
                 ) : (
                   transactions.map((tx) => {
-                    const isSuccess = tx.status === "CLEARED" || tx.status === "PAID";
-                    const isBlocked = tx.status === "BLOCKED" || tx.status === "DECLINED";
+                    const isCleared = tx.status === "CLEARED";
+                    const isBlocked = tx.status === "BLOCKED";
                     const isPending = tx.status === "PENDING";
+                    const isFailed = tx.status === "FAILED";
 
                     return (
                       <tr key={tx.id} className="hover:bg-blue-50/40 transition-colors duration-150">
@@ -290,16 +274,16 @@ export default function AdminTransactionsPage() {
                             {tx.student?.lastName} {tx.student?.firstName}
                           </div>
                           <div className="text-[11px] font-mono text-slate-500">
-                            {tx.student?.matricNumber || "N/A"} ({tx.student?.department || "General"})
+                            {tx.student?.matricNumber || "N/A"} ({tx.student?.department || "N/A"})
                           </div>
                         </td>
 
                         <td className="py-4 px-6 font-semibold text-slate-700 whitespace-nowrap">
-                          {tx.invoice?.category?.replace("_", " ") || "General Fee"}
+                          {tx.invoice?.category?.replace("_", " ") || "N/A"}
                         </td>
 
                         <td className="py-4 px-6 font-mono text-slate-600 font-bold whitespace-nowrap">
-                          {tx.reference || `TRX-${tx.id.substring(0, 8).toUpperCase()}`}
+                          {tx.reference || "—"}
                         </td>
 
                         <td className="py-4 px-6 font-extrabold text-slate-900 font-mono text-right whitespace-nowrap">
@@ -307,7 +291,7 @@ export default function AdminTransactionsPage() {
                         </td>
 
                         <td className="py-4 px-6 text-center whitespace-nowrap">
-                          {isSuccess && (
+                          {isCleared && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold uppercase tracking-wider">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                               <span>Cleared</span>
@@ -325,23 +309,27 @@ export default function AdminTransactionsPage() {
                               <span>Pending</span>
                             </span>
                           )}
+                          {isFailed && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold uppercase tracking-wider">
+                              <XCircle className="w-3 h-3 text-slate-500" />
+                              <span>Failed</span>
+                            </span>
+                          )}
                         </td>
 
-                        {/* Remark Cell */}
-                        <td className="py-4 px-6 text-slate-600 max-w-[220px] truncate" title={tx.auditLog?.explanation || (isPending ? "Awaiting Gateway Processing" : "Standard Clearance Processed")}>
+                        <td className="py-4 px-6 text-slate-600 max-w-[220px] truncate" title={tx.auditLog?.explanation || "No AI explanation recorded."}>
                           <span className={isBlocked ? "font-semibold text-rose-700" : isPending ? "font-medium text-amber-600" : ""}>
-                            {tx.auditLog?.explanation || (isPending ? "Awaiting Gateway Processing" : "Standard Clearance Processed")}
+                            {tx.auditLog?.explanation || "No AI explanation recorded."}
                           </span>
                         </td>
 
-                        {/* Action cell */}
                         <td className="py-4 px-6 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
-                            {isSuccess && (
+                            {isCleared && (
                               <button
                                 onClick={() => router.push(`/receipt/${tx.id}`)}
                                 className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-[#001C3D] font-bold rounded-lg text-[11px] transition-all inline-flex items-center gap-1 cursor-pointer"
-                                title="Inspect Official e-Receipt"
+                                title="Open receipt"
                               >
                                 <span>Receipt</span>
                               </button>
@@ -352,7 +340,7 @@ export default function AdminTransactionsPage() {
                                 ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
                                 : "bg-[#001C3D] hover:bg-[#00152e] text-white"
                                 }`}
-                              title="Inspect White-Box AI Forensics"
+                              title="Open transaction forensics"
                             >
                               <span>Forensics</span>
                             </button>
@@ -365,10 +353,8 @@ export default function AdminTransactionsPage() {
               </tbody>
             </table>
 
-            {/* ═══════════════ PAGINATION FOOTER ═══════════════ */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-slate-100 bg-slate-50/40">
 
-              {/* Left: Showing X–Y of Z + Rows per page */}
               <div className="flex items-center gap-4 text-xs font-semibold text-slate-600 flex-wrap justify-center sm:justify-start">
                 <span>
                   Showing{" "}
@@ -393,7 +379,6 @@ export default function AdminTransactionsPage() {
                 </label>
               </div>
 
-              {/* Right: Page navigation */}
               <div className="flex items-center gap-2">
                 <button
                   disabled={currentPage === 1}

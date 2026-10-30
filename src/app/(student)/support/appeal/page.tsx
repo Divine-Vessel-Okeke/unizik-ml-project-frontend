@@ -3,20 +3,17 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ShieldAlert, Send, CheckCircle2, AlertCircle, FileText } from "lucide-react";
+import { ShieldAlert, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import StudentHeader from "@/components/StudentHeader";
 import BackButton from "@/components/BackButton";
+import { MSG } from "@/lib/messages";
 
-// ---------------------------------------------------------------
-// Inner form receives the URL param as prop.
-// Remounts (fresh state) whenever invoiceId changes via the key prop
-// in <AppealFormKeyed>, which prevents the "success screen persists
-// after navigating to a different invoice" bug.
-// ---------------------------------------------------------------
+// Inner form receives the URL param as prop. Remounts on invoiceId change
+// via the key prop in <AppealFormKeyed> so the previous success screen
+// does not persist when a different invoice is selected.
 function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) {
   const router = useRouter();
-  console.log("[APPEAL DEBUG] Form render — preselectedInvoiceId:", preselectedInvoiceId);  // ← ADD THIS
-  
+
   const [user, setUser] = useState<any | null>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState(preselectedInvoiceId || "");
@@ -35,9 +32,7 @@ function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) 
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
 
-    // Fetch student's invoices; only keep invoices where an appeal is
-    // currently action-able: blocked, and appeal status is neither
-    // PENDING (already in admin queue) nor APPROVED (already resolved).
+    // Keep invoices that are blocked and have no PENDING or APPROVED appeal.
     fetch(`/api/invoices?studentId=${parsedUser.id}`)
       .then((res) => res.json())
       .then((data) => {
@@ -64,7 +59,7 @@ function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedInvoice || !reason.trim()) {
-      setError("Please select a fee category and provide a detailed explanation.");
+      setError("Select an invoice and enter a reason.");
       return;
     }
 
@@ -86,17 +81,17 @@ function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) 
       if (res.ok && data.success) {
         setSuccess(true);
       } else {
-        setError(data.error || "Failed to submit verification request.");
+        setError(data.error || MSG.GENERIC_ERROR);
       }
     } catch (err) {
-      setError("Network communication failure.");
+      setError(MSG.GENERIC_ERROR);
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
-    return <div className="p-12 text-center text-slate-500 font-medium">Loading security records...</div>;
+    return <div className="p-12 text-center text-slate-500 font-medium">Loading...</div>;
   }
 
   return (
@@ -108,17 +103,17 @@ function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) 
             <ShieldAlert className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold text-[#001C3D]">Bursary Security Review</h1>
-            <p className="text-xs text-slate-500 font-medium">Request institutional override for suspended payment routing.</p>
+            <h1 className="text-lg font-extrabold text-[#001C3D]">Appeal a Blocked Invoice</h1>
+            <p className="text-xs text-slate-500 font-medium">Submit an appeal for a blocked payment.</p>
           </div>
         </div>
 
         {success ? (
           <div className="text-center py-6 space-y-4">
             <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-            <h3 className="font-extrabold text-[#001C3D] text-base">Verification Request Submitted</h3>
+            <h3 className="font-extrabold text-[#001C3D] text-base">Appeal Submitted</h3>
             <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto">
-              Your explanation has been transmitted to the Chief Bursar's administrative queue. Once verified, your invoice will be restored to active clearance status.
+              Your appeal has been recorded. An admin can approve or reject it. Approval sets the invoice back to PENDING so you can retry checkout.
             </p>
             <button
               onClick={() => router.push("/dashboard")}
@@ -130,10 +125,9 @@ function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) 
         ) : invoices.length === 0 ? (
           <div className="text-center py-10 space-y-3">
             <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-            <h3 className="font-extrabold text-[#001C3D] text-base">No Appeals Currently Required</h3>
-            <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto">
-              All your fee obligations are either cleared, paid, or already under review by the Bursary. There are no security holds requiring action at this time.
-            </p>
+            <h3 className="font-extrabold text-[#001C3D] text-base">
+              No blocked invoices need an appeal right now.
+            </h3>
             <button
               onClick={() => router.push("/dashboard")}
               className="mt-4 px-6 py-2.5 bg-[#001C3D] hover:bg-[#00152e] text-white rounded-xl text-xs font-bold cursor-pointer"
@@ -152,14 +146,14 @@ function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) 
 
             <div>
               <label className="block font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-1">
-                Select Suspended Fee Obligation
+                Select Blocked Invoice
               </label>
               <select
                 value={selectedInvoice}
                 onChange={(e) => setSelectedInvoice(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:outline-none focus:border-[#001C3D]"
               >
-                <option value="">-- Choose Obligation --</option>
+                <option value="">-- Choose Invoice --</option>
                 {invoices.map((inv) => (
                   <option key={inv.id} value={inv.id}>
                     {inv.category.replace("_", " ")} ({inv.session}) — ₦{inv.amount.toLocaleString()}
@@ -170,16 +164,16 @@ function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) 
 
             <div>
               <label className="block font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-1">
-                Explanation for Telemetry Variance
+                Reason
               </label>
               <p className="text-[11px] text-slate-400 mb-2">
-                Provide the operational reason for your payment attempt (e.g., using departmental library PC due to laptop hardware failure, or public WiFi usage).
+                Explain why this payment attempt should be reviewed.
               </p>
               <textarea
                 rows={4}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="State your formal explanation for the administrative officer here..."
+                placeholder="Enter your reason..."
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#001C3D]"
               />
             </div>
@@ -190,7 +184,7 @@ function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) 
               className="w-full py-3.5 bg-[#001C3D] hover:bg-[#00152e] text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50 mt-2"
             >
               <Send className="w-4 h-4 text-[#F58220]" />
-              <span>{submitting ? "Transmitting to Bursary..." : "Submit Formal Explanation"}</span>
+              <span>{submitting ? "Submitting..." : "Submit Appeal"}</span>
             </button>
           </form>
         )}
@@ -199,16 +193,11 @@ function AppealForm({ preselectedInvoiceId }: { preselectedInvoiceId: string }) 
   );
 }
 
-// ---------------------------------------------------------------
-// Keyed wrapper: reading the URL param here and using it as the key
-// on <AppealForm> forces a remount (state reset) whenever the param
-// changes. Fixes the "success screen from previous submission
-// persists when clicking a different invoice's Request Review".
-// ---------------------------------------------------------------
+// Reads the URL param and uses it as the key on <AppealForm>, forcing a
+// remount (state reset) whenever the param changes.
 function AppealFormKeyed() {
   const searchParams = useSearchParams();
   const invoiceId = searchParams.get("invoiceId") || "";
-    console.log("[APPEAL DEBUG] Keyed render — invoiceId:", invoiceId);  // ← ADD THIS
   return <AppealForm key={invoiceId || "no-param"} preselectedInvoiceId={invoiceId} />;
 }
 

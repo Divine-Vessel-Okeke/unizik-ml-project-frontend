@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, User, LogOut, LogIn, Cpu } from "lucide-react";
+import { logout } from "@/lib/auth";
 
 interface StudentHeaderProps {
   user?: {
@@ -14,34 +15,31 @@ interface StudentHeaderProps {
   } | null;
 }
 
-export default function StudentHeader({ user: propUser }: StudentHeaderProps) {
+export default function StudentHeader({ user: _propUser }: StudentHeaderProps) {
   const router = useRouter();
-  const [sessionUser, setSessionUser] = useState<any | null>(null);
+  const [storedUser, setStoredUser] = useState<any | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Always derive auth state from localStorage — never from prop.
-  // Prop is accepted for backwards compatibility but unused for badge display,
-  // because receipt page passes the invoice's student (even when nobody is logged in).
   useEffect(() => {
-    const storedUser = localStorage.getItem("unizik_user");
-    if (storedUser) {
+    const raw = localStorage.getItem("unizik_user");
+    if (raw) {
       try {
-        setSessionUser(JSON.parse(storedUser));
+        setStoredUser(JSON.parse(raw));
       } catch {
-        setSessionUser(null);
+        setStoredUser(null);
       }
     } else {
-      setSessionUser(null);
+      setStoredUser(null);
     }
     setMounted(true);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("unizik_user");
+    logout();
     router.push("/login");
   };
 
-  const isLoggedIn = !!sessionUser;
+  const isLoggedIn = !!storedUser;
 
   return (
     <>
@@ -82,16 +80,16 @@ export default function StudentHeader({ user: propUser }: StudentHeaderProps) {
             </div>
           </div>
 
-          {/* User Profile & Auth Controls — rendered only after mount to avoid hydration flash */}
+          {/* User Account & Auth Controls — rendered only after mount to avoid hydration flash */}
           {mounted && (
             <div className="flex items-center gap-3">
-              {isLoggedIn && sessionUser && (
+              {isLoggedIn && storedUser && (
                 <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-100/80 px-3.5 py-2 rounded-xl border border-slate-200/80">
                   <User className="w-3.5 h-3.5 text-[#001C3D]" />
-                  <span>{sessionUser.name}</span>
-                  {(sessionUser.matricNumber || sessionUser.username) && (
+                  <span>{storedUser.name}</span>
+                  {storedUser.matricNumber && (
                     <span className="text-slate-400 font-mono">
-                      ({sessionUser.matricNumber || sessionUser.username})
+                      ({storedUser.matricNumber})
                     </span>
                   )}
                 </div>
@@ -110,7 +108,7 @@ export default function StudentHeader({ user: propUser }: StudentHeaderProps) {
                 <button
                   onClick={() => router.push("/login")}
                   className="px-4 py-2 text-white bg-[#001C3D] hover:bg-[#00152e] rounded-xl transition-all duration-200 flex items-center gap-1.5 text-xs font-bold shadow-md shadow-blue-950/20 cursor-pointer"
-                  title="Sign In"
+                  title="Login"
                 >
                   <LogIn className="w-3.5 h-3.5 text-[#F58220]" />
                   <span>Login</span>

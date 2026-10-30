@@ -33,13 +33,13 @@ const FEATURE_META: {
   {
     key: 'page_dwell_time_seconds',
     label: 'Page dwell time (seconds)',
-    hint: 'Time on checkout page — ticks live until manually edited',
+    hint: 'Time on checkout page — ticks every 1s until manually edited',
     type: 'float', min: 0.1, max: 180, step: 0.1,
   },
   {
     key: 'is_high_risk_asn',
-    label: 'High-risk ASN (VPN / datacenter)',
-    hint: '0 = major Nigerian mobile carrier, 1 = anything else',
+    label: 'High-risk ASN',
+    hint: '0 = ISP is MTN, GLOBACOM, AIRTEL, 9MOBILE, or ETISALAT; 1 = any other ISP',
     type: 'binary', min: 0, max: 1, step: 1,
   },
   {
@@ -115,8 +115,8 @@ export default function DiagnosticsPanel({
     return () => clearInterval(interval);
   }, [startTime]);
 
-  // Compute live values (merged from server + client)
-  const liveValues: DiagnosticsValues = {
+  // Compute current values (merged from server + client)
+  const currentValues: DiagnosticsValues = {
     device_student_count_24h: serverFeatures.device_student_count_24h ?? 1,
     page_dwell_time_seconds: tickDwell,
     is_high_risk_asn: serverFeatures.is_high_risk_asn ?? 0,
@@ -126,7 +126,7 @@ export default function DiagnosticsPanel({
   };
 
   // Final merged values — edited values win
-  const finalValues: DiagnosticsValues = { ...liveValues };
+  const finalValues: DiagnosticsValues = { ...currentValues };
   for (const key of editedKeys) {
     const v = editedValues[key];
     if (v !== undefined) finalValues[key] = v;
@@ -199,7 +199,7 @@ export default function DiagnosticsPanel({
       <button
         id="diagnostics-panel-trigger"
         onClick={() => setOpen(!open)}
-        title="Open diagnostic telemetry panel"
+        title="Open telemetry panel"
         className={`fixed right-0 top-1/2 -translate-y-1/2 z-40 px-2 py-5 rounded-l-2xl shadow-lg transition-all cursor-pointer ${
           isSimulated
             ? 'bg-amber-500 hover:bg-amber-600'
@@ -230,14 +230,14 @@ export default function DiagnosticsPanel({
                 <h3 className={`text-sm font-extrabold uppercase tracking-wide ${
                   isSimulated ? 'text-amber-900' : 'text-[#001C3D]'
                 }`}>
-                  {isSimulated ? 'Simulation Active' : 'Live Telemetry Monitor'}
+                  {isSimulated ? 'Simulation Active' : 'Telemetry Monitor'}
                 </h3>
                 <p className={`text-[10px] font-medium ${
                   isSimulated ? 'text-amber-700' : 'text-slate-500'
                 }`}>
                   {isSimulated
-                    ? 'Submitted record will be marked SIMULATED'
-                    : 'All values observed live — refreshes every 5s'}
+                    ? 'Edited values will be recorded as SIMULATED'
+                    : 'All values fetched from server — refreshes every 5s'}
                 </p>
               </div>
             </div>
@@ -254,9 +254,9 @@ export default function DiagnosticsPanel({
           <div className="divide-y divide-slate-100">
             {FEATURE_META.map((meta) => {
               const isEdited = editedKeys.has(meta.key);
-              const liveValue = liveValues[meta.key];
+              const currentValue = currentValues[meta.key];
               const finalValue = finalValues[meta.key];
-              const displayLive = meta.type === 'float' ? liveValue.toFixed(2) : String(liveValue);
+              const displayCurrent = meta.type === 'float' ? currentValue.toFixed(2) : String(currentValue);
 
               return (
                 <div key={meta.key} className={`px-5 py-3 ${isEdited ? 'bg-amber-50/40' : ''}`}>
@@ -307,7 +307,7 @@ export default function DiagnosticsPanel({
                           max={meta.max}
                           step={meta.step}
                           value={isEdited ? finalValue : ''}
-                          placeholder={displayLive}
+                          placeholder={displayCurrent}
                           onChange={(e) => handleEdit(meta.key, e.target.value)}
                           className={`w-24 px-2 py-1 rounded text-[11px] font-mono font-bold text-right border focus:outline-none focus:ring-2 ${
                             isEdited
@@ -330,7 +330,7 @@ export default function DiagnosticsPanel({
                 isSimulated ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'
               }`} />
               <span className={isSimulated ? 'text-amber-700' : 'text-emerald-700'}>
-                {isSimulated ? `${editedKeys.size} override${editedKeys.size === 1 ? '' : 's'} active` : 'Live'}
+                {isSimulated ? `${editedKeys.size} override${editedKeys.size === 1 ? '' : 's'} active` : 'Unmodified'}
               </span>
             </div>
             <button

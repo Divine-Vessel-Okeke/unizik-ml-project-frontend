@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { FeeCategory, TransactionStatus } from '@prisma/client';
+import { MSG } from '@/lib/messages';
 
 export async function GET(req: Request) {
   try {
@@ -28,9 +29,8 @@ export async function GET(req: Request) {
         const normalizedWord = word.toUpperCase().replace(/\s+/g, '_');
         const isMatchingEnum = Object.values(FeeCategory).includes(normalizedWord as FeeCategory);
 
-        // NOTE: SQLite does not support Prisma's `mode: 'insensitive'`.
-        // SQLite's LIKE (used by `contains`) is case-insensitive for ASCII by default,
-        // so plain `contains` works fine here.
+        // SQLite's LIKE (used by Prisma `contains`) is case-insensitive for ASCII
+        // by default. Non-ASCII (accented, non-Latin) characters are case-sensitive.
         const orConditions: any[] = [
           { reference: { contains: word } },
           { student: { matricNumber: { contains: word } } },
@@ -70,6 +70,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: true, transactions, total: totalRecords, pages: totalPages, page }, { status: 200 });
   } catch (error: any) {
     console.error('[ADMIN TRANSACTIONS ERROR]:', error.message);
-    return NextResponse.json({ success: false, error: 'Failed to retrieve global transaction ledger.' }, { status: 500 });
+    return NextResponse.json({ success: false, error: MSG.GENERIC_ERROR }, { status: 500 });
   }
 }

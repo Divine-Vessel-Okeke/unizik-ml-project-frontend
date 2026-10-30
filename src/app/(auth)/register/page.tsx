@@ -3,8 +3,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, Lock, User, Mail, BookOpen, GraduationCap, ArrowRight, CheckCircle2, AlertCircle, Cpu } from "lucide-react";
+import { Shield, Lock, User, Mail, BookOpen, GraduationCap, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { generateDeviceFingerprint } from "@/lib/fingerprint";
+import { MSG } from "@/lib/messages";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,14 +20,19 @@ export default function RegisterPage() {
     confirmPassword: ""
   });
 
-  const [deviceId, setDeviceId] = useState("HARVESTING_BASELINE_FINGERPRINT...");
+  const [deviceId, setDeviceId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Harvest baseline hardware fingerprint silently on mount
+  // Generate device fingerprint on mount; sent with registration request
   useEffect(() => {
-    generateDeviceFingerprint().then((fp) => setDeviceId(fp));
+    generateDeviceFingerprint()
+      .then((fp) => setDeviceId(fp))
+      .catch(() => {
+        console.error("[REGISTER] An error occurred during fingerprint generation.");
+        setDeviceId("UNIZIK_FP_UNAVAILABLE");
+      });
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -38,15 +44,15 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
 
-    // Frontend validation guardrails
+    // Frontend validation
     if (formData.password !== formData.confirmPassword) {
-      setError("The passwords entered do not match. Please re-verify your credential.");
+      setError("Passwords do not match.");
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError("To ensure account security, passwords must be at least 6 characters long.");
+      setError("Passwords must be at least 6 characters long.");
       setLoading(false);
       return;
     }
@@ -74,10 +80,10 @@ export default function RegisterPage() {
           router.push("/login");
         }, 2000);
       } else {
-        setError(data.error || "Registration attempt failed. Please check your inputs.");
+        setError(data.error || MSG.GENERIC_ERROR);
       }
     } catch (err) {
-      setError("Unable to communicate with the central university authentication server.");
+      setError(MSG.GENERIC_ERROR);
     } finally {
       setLoading(false);
     }
@@ -330,7 +336,7 @@ export default function RegisterPage() {
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Creating...</span>
+                    <span>Submitting...</span>
                   </div>
                 ) : (
                   <>
@@ -341,17 +347,6 @@ export default function RegisterPage() {
               </button>
             </form>
           )}
-
-          {/* Device Telemetry Baseline Indicator */}
-          {/* <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-            <span className="flex items-center gap-1 font-sans font-semibold text-slate-500">
-              <Cpu className="w-3 h-3 text-[#F58220]" />
-              <span>Hardware Anchor Hash:</span>
-            </span>
-            <span className="truncate max-w-[200px] sm:max-w-[280px] bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60 font-semibold text-slate-600">
-              {deviceId}
-            </span>
-          </div> */}
 
         </div>
 

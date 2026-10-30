@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { Printer, CheckCircle2, QrCode, AlertCircle } from "lucide-react";
 import StudentHeader from "@/components/StudentHeader";
 import BackButton from "@/components/BackButton";
+import { MSG } from "@/lib/messages";
 
-export default function ReceiptVerificationPage({ params }: { params: Promise<{ txId: string }> }) {
+export default function ReceiptPage({ params }: { params: Promise<{ txId: string }> }) {
   const router = useRouter();
   const { txId } = use(params);
 
-  const [user, setUser] = useState<any | null>(null);
+  const [headerStudent, setHeaderStudent] = useState<any | null>(null);
   const [invoice, setInvoice] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,16 +23,16 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
         if (data.success && data.invoice) {
           setInvoice(data.invoice);
           if (data.invoice.student) {
-            setUser({
+            setHeaderStudent({
               ...data.invoice.student,
               name: `${data.invoice.student.firstName} ${data.invoice.student.lastName}`
             });
           }
         } else {
-          setError(data.error || "Unable to retrieve this transaction record.");
+          setError(data.error || MSG.GENERIC_ERROR);
         }
       })
-      .catch(() => setError("Network error while retrieving receipt."))
+      .catch(() => setError(MSG.GENERIC_ERROR))
       .finally(() => setLoading(false));
   }, [txId]);
 
@@ -49,7 +50,7 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
   if (error || !invoice) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16">
-        <div className="print:hidden"><StudentHeader user={user} /></div>
+        <div className="print:hidden"><StudentHeader user={headerStudent} /></div>
         <main className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
           <div className="bg-white border border-rose-200 rounded-2xl p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-center space-y-4">
             <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto"><AlertCircle className="w-6 h-6" /></div>
@@ -62,16 +63,20 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
     );
   }
 
-  const verificationUrl = typeof window !== "undefined" ? window.location.href : `https://portal.unizik.edu.ng/receipt/${txId}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(verificationUrl)}&color=001C3D`;
-  const paymentDate = new Date(invoice.createdAt || Date.now()).toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  const receiptUrl = typeof window !== "undefined" ? window.location.href : `/receipt/${txId}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(receiptUrl)}&color=001C3D`;
+  const latestTxDate = invoice.transactions?.[0]?.createdAt;
+  const paymentDate = latestTxDate
+    ? new Date(latestTxDate).toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "N/A";
   const receiptNumber = `REC-${invoice.id.substring(0, 8).toUpperCase()}`;
-  const transactionRef = invoice.transactions?.[0]?.reference || `TRX-${txId.substring(0, 10).toUpperCase()}`;
-  const receiptStudent = invoice.student || {};
+  const transactionRef = invoice.transactions?.[0]?.reference || "—";
+  const student = invoice.student || {};
+  const studentName = [student.lastName, student.firstName].filter(Boolean).join(" ") || "N/A";
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16 selection:bg-[#001C3D] selection:text-white print:bg-white print:pb-0">
-      <div className="print:hidden"><StudentHeader user={user} /></div>
+      <div className="print:hidden"><StudentHeader user={headerStudent} /></div>
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 print:mt-0 print:max-w-none print:px-0">
         <div className="flex items-center justify-between mb-6 print:hidden">
           <BackButton />
@@ -93,9 +98,6 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
               </div>
             </div>
             <div className="sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100 w-full sm:w-auto">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /><span>ML Classified</span>
-              </span>
               <div className="text-xs font-mono font-bold text-slate-700">Receipt No: <span className="text-[#001C3D]">{receiptNumber}</span></div>
               <div className="text-[11px] font-mono text-slate-500 mt-0.5">Date: {paymentDate}</div>
             </div>
@@ -108,10 +110,10 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-xs">
             <div className="space-y-3 bg-slate-50/60 p-4 rounded-xl border border-slate-200/60">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block border-b border-slate-200 pb-1">Student Information</span>
-              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Student Name:</span><span className="font-bold text-slate-900">{receiptStudent?.lastName} {receiptStudent?.firstName}</span></div>
-              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Matriculation No:</span><span className="font-mono font-bold text-[#001C3D]">{receiptStudent?.matricNumber || "N/A"}</span></div>
-              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Department:</span><span className="font-semibold text-slate-700">{receiptStudent?.department || "Computer Science"}</span></div>
-              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Academic Level:</span><span className="font-semibold text-slate-700">{receiptStudent?.level ? `${receiptStudent.level} Level` : "Undergraduate"}</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Student Name:</span><span className="font-bold text-slate-900">{studentName}</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Matriculation No:</span><span className="font-mono font-bold text-[#001C3D]">{student.matricNumber || "N/A"}</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Department:</span><span className="font-semibold text-slate-700">{student.department || "N/A"}</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Academic Level:</span><span className="font-semibold text-slate-700">{student.level ? `${student.level} Level` : "N/A"}</span></div>
             </div>
 
             <div className="space-y-3 bg-slate-50/60 p-4 rounded-xl border border-slate-200/60">
@@ -119,7 +121,7 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
               <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Academic Session:</span><span className="font-mono font-bold text-slate-900">{invoice.session}</span></div>
               <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Payment Channel:</span><span className="font-semibold text-slate-700">Simulated Settlement (Prototype)</span></div>
               <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Payment Reference:</span><span className="font-mono font-bold text-slate-800">{transactionRef}</span></div>
-              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Audit Status:</span><span className="font-bold text-emerald-700">RECORDED IN PROTOTYPE LEDGER</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500 font-medium">Status:</span><span className="font-bold text-emerald-700">RECORDED IN PROTOTYPE DATABASE</span></div>
             </div>
           </div>
 
@@ -129,7 +131,7 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
                 <tr className="bg-[#001C3D] text-white uppercase tracking-wider text-[11px] font-bold">
                   <th className="py-3 px-4">Description / Fee Category</th>
                   <th className="py-3 px-4 text-center">Session</th>
-                  <th className="py-3 px-4 text-right">Amount Settled (₦)</th>
+                  <th className="py-3 px-4 text-right">Amount Recorded (₦)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 font-medium">
@@ -151,22 +153,18 @@ export default function ReceiptVerificationPage({ params }: { params: Promise<{ 
           <div className="border-t border-slate-200 pt-8 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4 text-center sm:text-left">
               <div className="p-2 bg-white border border-slate-200 rounded-xl shadow-xs shrink-0">
-                <img src={qrCodeUrl} alt="QR Verification Code" className="w-24 h-24 object-contain" />
+                <img src={qrCodeUrl} alt="QR Code" className="w-24 h-24 object-contain" />
               </div>
               <div className="space-y-1 max-w-xs">
                 <span className="text-xs font-bold text-[#001C3D] flex items-center justify-center sm:justify-start gap-1">
                   <QrCode className="w-3.5 h-3.5 text-[#F58220]" /><span>QR Code</span>
                 </span>
-                <p className="text-[11px] text-slate-500 leading-relaxed">Scan to view this transaction record on the prototype instance.</p>
-                <div className="text-[10px] font-mono text-slate-400 truncate pt-1">HASH: {invoice.id}</div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">Scan to view this receipt page.</p>
+                <div className="text-[10px] font-mono text-slate-400 truncate pt-1">INVOICE ID: {invoice.id}</div>
               </div>
             </div>
             <div className="text-center sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100 w-full sm:w-auto">
-              <div className="inline-block px-4 py-2 border-2 border-dashed border-emerald-600/60 rounded-xl bg-emerald-50/40 text-emerald-800 mb-2">
-                <span className="block font-extrabold text-[11px] tracking-widest uppercase">ACADEMIC PROTOTYPE</span>
-                <span className="block font-mono text-[9px] text-emerald-700">ML CLASSIFIED</span>
-              </div>
-              <span className="block text-[11px] font-bold text-slate-700">B.Sc. Capstone Project</span>
+              <span className="block text-[11px] font-bold text-slate-700">B.Sc. Project</span>
               <span className="block text-[10px] text-slate-400 italic">Not an official UNIZIK document</span>
             </div>
           </div>

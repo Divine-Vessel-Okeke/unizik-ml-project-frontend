@@ -3,8 +3,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard, FileText, Plus, CheckCircle, Clock, LogOut, User, ShieldCheck, AlertCircle, Shield, Cpu } from "lucide-react";
+import { CreditCard, FileText, Plus, CheckCircle, Clock, AlertCircle, Shield } from "lucide-react";
 import StudentHeader from "@/components/StudentHeader";
+import { MSG } from "@/lib/messages";
 
 interface Invoice {
   id: string;
@@ -42,7 +43,7 @@ export default function StudentDashboard() {
           setError(data.error);
         }
       })
-      .catch(() => setError("Failed to synchronize with university ledger."))
+      .catch(() => setError(MSG.GENERIC_ERROR))
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -83,14 +84,13 @@ export default function StudentDashboard() {
             </div>
             <div className="text-xs font-bold text-slate-600 mt-4 flex items-center justify-between border-t border-slate-100 pt-3 relative z-10 font-mono">
               <span className="bg-slate-100 px-2.5 py-1 rounded-md text-[#001C3D]">LEVEL: {user.level}L</span>
-              <span className="text-slate-500">SESSION: 2025/2026</span>
             </div>
           </div>
 
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Total Fees Cleared
+                Total Fees Paid
               </span>
               <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 font-mono tracking-tight mt-1">
                 ₦{totalPaid.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
@@ -104,7 +104,7 @@ export default function StudentDashboard() {
                 Payable Invoices
               </span>
               <div className="text-2xl sm:text-3xl font-extrabold text-[#F58220] font-mono tracking-tight mt-1">
-                {pendingCount} Invoice{pendingCount !== 1 ? "s" : ""} Due
+                {pendingCount} Pending
               </div>
             </div>
             <button
@@ -139,7 +139,7 @@ export default function StudentDashboard() {
 
           {invoices.length === 0 ? (
             <div className="p-12 text-center text-slate-400 text-sm font-medium">
-              No fee invoices generated for the 2025/2026 academic session yet. Click &ldquo;Generate New Fee Invoice&rdquo; above to begin.
+              No fee invoices generated yet. Click &ldquo;Generate New Fee Invoice&rdquo; above to begin.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -189,17 +189,17 @@ export default function StudentDashboard() {
                                 </span>
                                 {latestTx?.appeal?.adminNotes && (
                                   <span className="text-[11px] font-semibold text-rose-700 bg-rose-50/90 border border-rose-200 px-2.5 py-1.5 rounded-lg max-w-xs block font-sans">
-                                    <strong className="uppercase tracking-wider text-[9px] block text-rose-900 mb-0.5">Bursar Feedback:</strong>
+                                    <strong className="uppercase tracking-wider text-[9px] block text-rose-900 mb-0.5">Admin Notes:</strong>
                                     {latestTx.appeal.adminNotes}
                                   </span>
                                 )}
                               </div>
                             ) : (
-  <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-800 border border-rose-200 px-3 py-1 rounded-full font-sans text-[11px] font-bold shadow-2xs">
-    <Shield className="w-3.5 h-3.5 text-rose-600" />
-    <span>BLOCKED</span>
-  </span>
-)
+                              <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-800 border border-rose-200 px-3 py-1 rounded-full font-sans text-[11px] font-bold shadow-2xs">
+                                <Shield className="w-3.5 h-3.5 text-rose-600" />
+                                <span>BLOCKED</span>
+                              </span>
+                            )
                           ) : (
                             <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200/80 px-3 py-1 rounded-full font-sans text-[11px] font-bold shadow-2xs">
                               <Clock className="w-3.5 h-3.5 text-amber-600" />
@@ -211,8 +211,8 @@ export default function StudentDashboard() {
                           {isPaid ? (
                             <button
                               onClick={() => {
-                                const clearedTx = inv.transactions?.find((tx: any) => tx.status === "CLEARED" || tx.status === "SUCCESS");
-                                const txId = clearedTx?.id || (inv as any).reference || inv.id;
+                                const clearedTx = inv.transactions?.find((tx: any) => tx.status === "CLEARED");
+                                const txId = clearedTx?.id || inv.id;
                                 router.push(`/receipt/${txId}`);
                               }}
                               className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-xl font-bold text-xs transition-all duration-200 shadow-2xs flex items-center gap-1.5 ml-auto cursor-pointer"
@@ -229,14 +229,6 @@ export default function StudentDashboard() {
                                 <Clock className="w-3.5 h-3.5" />
                                 <span>Under Review</span>
                               </button>
-                            ) : appealStatus === "REJECTED" ? (
-                              <button
-                                onClick={() => router.push(`/support/appeal?invoiceId=${inv.id}`)}
-                                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white rounded-xl font-bold text-xs transition-all duration-200 shadow-sm shadow-rose-500/20 flex items-center gap-1.5 ml-auto cursor-pointer"
-                              >
-                                <AlertCircle className="w-3.5 h-3.5" />
-                                <span>Request Review</span>
-                              </button>
                             ) : (
                               <button
                                 onClick={() => router.push(`/support/appeal?invoiceId=${inv.id}`)}
@@ -252,7 +244,7 @@ export default function StudentDashboard() {
                               className="px-4 py-2 bg-[#F58220] hover:bg-[#d97016] active:scale-[0.98] text-white rounded-xl font-bold text-xs transition-all duration-200 shadow-sm shadow-orange-500/20 flex items-center gap-1.5 ml-auto cursor-pointer"
                             >
                               <CreditCard className="w-3.5 h-3.5" />
-                              <span>Pay Now</span>
+                              <span>Proceed to Checkout</span>
                             </button>
                           )}
                         </td>
